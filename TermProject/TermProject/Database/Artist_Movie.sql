@@ -1,0 +1,10 @@
+DROP TABLE "Artist_Movie";
+CREATE TABLE "Artist_Movie" (
+  "role" VARCHAR2(30) NOT NULL,
+  "aID" NUMBER NOT NULL,
+  "mID" NUMBER NOT NULL,
+  CONSTRAINT "ArtistMoviePk" PRIMARY KEY ("aID", "mID")
+);
+
+ALTER TABLE "Artist_Movie" ADD CONSTRAINT "Artist_Artist_Movie_Fk" FOREIGN KEY ("aID") REFERENCES Artist(aID) ON DELETE CASCADE;
+ALTER TABLE "Artist_Movie" ADD CONSTRAINT "Movie_Artist_Movie_Fk" FOREIGN KEY ("mID") REFERENCES Movie(mID) ON DELETE CASCADE;

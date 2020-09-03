@@ -1,0 +1,8 @@
+DROP TABLE "Users";
+CREATE TABLE "Users" (
+  "usID" NUMBER NOT NULL,
+  "User_Name" VARCHAR2(30) NOT NULL,
+  "Password" VARCHAR2(30) NOT NULL,
+  CONSTRAINT "UserPk" PRIMARY KEY ("usID"),
+  CONSTRAINT "UserName" UNIQUE ("User_Name")
+);
