@@ -1,0 +1,9 @@
+DROP TABLE "Movie";
+CREATE TABLE "Movie" (
+  "mID" NUMBER NOT NULL,
+  "Title" VARCHAR2(30) NOT NULL,
+  "Release_Date" DATE NOT NULL,
+  "Rating" INTEGER NOT NULL,
+  CONSTRAINT "MoviePK" PRIMARY KEY ("mID"),
+  CONSTRAINT "RatingMovie" CHECK ("Rating" BETWEEN 1 and 10)
+);
