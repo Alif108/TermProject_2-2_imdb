@@ -7,7 +7,7 @@ CREATE TABLE "Artist" (
   "Nationality" VARCHAR2(30) NOT NULL,
   "Birth_Place" VARCHAR2(30) NOT NULL,
   "Death_Date" DATE,
-  "Photo" BLOB NOT NULL,
+  "Photo" BLOB,
   CONSTRAINT "ArtistPK" PRIMARY KEY ("aID")
 );
 
