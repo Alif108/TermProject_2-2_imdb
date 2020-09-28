@@ -10,6 +10,7 @@ CREATE TABLE "SHOW" (
   "Episode Duration" INTEGER NOT NULL,
   "Language" VARCHAR2(20) NOT NULL,
   "Photo" BLOB,
+  "Description" VARCHAR2(200),
   CONSTRAINT "ShowPk" PRIMARY KEY ("sID"),
   CONSTRAINT "RatingShow" CHECK ("Rating" BETWEEN 1 and 10)
 );
