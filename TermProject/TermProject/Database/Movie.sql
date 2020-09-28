@@ -7,6 +7,7 @@ CREATE TABLE "MOVIE" (
   "Duration" INTEGER NOT NULL,
   "Language" VARCHAR2(20) NOT NULL,
   "Photo" BLOB,
+  "Description" VARCHAR2(200),
   CONSTRAINT "MoviePK" PRIMARY KEY ("mID"),
   CONSTRAINT "RatingMovie" CHECK ("Rating" BETWEEN 1 and 10)
 );
