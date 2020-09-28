@@ -1,13 +1,19 @@
 DROP TABLE "Artist";
 CREATE TABLE "Artist" (
-  "aID " NUMBER NOT NULL,
+  "aID" NUMBER NOT NULL,
   "Name" VARCHAR2(30) NOT NULL,
   "Gender" VARCHAR2(20) NOT NULL,
   "Birth_Date" DATE NOT NULL,
   "Nationality" VARCHAR2(30) NOT NULL,
   "Birth_Place" VARCHAR2(30) NOT NULL,
   "Death_Date" DATE,
-  "Photo" BLOB NOT NULL,
-  CONSTRAINT "ArtistPK" PRIMARY KEY ("aID ")
+  "Photo" BLOB,
+  CONSTRAINT "ArtistPK" PRIMARY KEY ("aID")
 );
+
+CREATE SEQUENCE seq_artist
+MINVALUE 1
+START WITH 1
+INCREMENT BY 1
+CACHE 10;
 
