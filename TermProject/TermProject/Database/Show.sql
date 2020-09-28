@@ -8,6 +8,7 @@ CREATE TABLE "Show" (
   "Ending_Date" DATE,
   "Rating" INTEGER NOT NULL,
   "Episode Duration" INTEGER NOT NULL,
+  "Duration" INTEGER NOT NULL,
   "Language" VARCHAR2(20) NOT NULL,
   "Photo" BLOB,
   CONSTRAINT "ShowPk" PRIMARY KEY ("sID"),
