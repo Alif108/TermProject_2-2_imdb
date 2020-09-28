@@ -7,6 +7,8 @@ CREATE TABLE "Show" (
   "Release_Date" DATE NOT NULL,
   "Ending_Date" DATE,
   "Rating" INTEGER NOT NULL,
+  "Episode Duration" INTEGER NOT NULL,
+	"Language" VARCHAR2(20) NOT NULL,
   CONSTRAINT "ShowPk" PRIMARY KEY ("sID"),
   CONSTRAINT "RatingShow" CHECK ("Rating" BETWEEN 1 and 10)
 );
