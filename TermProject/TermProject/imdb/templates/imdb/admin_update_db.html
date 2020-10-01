@@ -1,0 +1,16 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IMDB</title>
+</head>
+<body>
+    <a href="{% url 'imdb:admin_movie_form' %}"><button type="button">Add Movie</button></a>
+    <a href="{% url 'imdb:admin_show_form' %}"><button type="button">Add Show</button></a>
+    <a href="{% url 'imdb:admin_genre_form' %}"><button type="button">Add Genre</button></a>
+    <a href="{% url 'imdb:admin_artist_form' %}"><button type="button">Add Artist</button></a>
+    <a href="{% url 'imdb:admin_director_form' %}"><button type="button">Add Director</button></a>
+</body>
+</html>
