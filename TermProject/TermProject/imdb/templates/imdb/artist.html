@@ -45,39 +45,33 @@
             </div><a href="{% url 'imdb:login' %}"><button class="btn btn-primary" id="LogIn" type="button">Log In</button></a></div>
     </nav>
     <div class="jumbotron" id="Movie">
-        <h1 id="Movie-Name">{{title}} ({{ release_date }})</h1><div class="form-group" id="star rating" >
-    <div class="text-left star-rating" style="font-size: 25px;color: #f9dd16;"><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;" data-rating="1"></span><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;" data-rating="2"></span><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;"
-            data-rating="3"></span><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;" data-rating="4"></span><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;" data-rating="5"></span><input class="form-control rating-value"
-            type="hidden" id="rate" name="Rating" value="0" /></div>
+        <h1 id="Movie-Name">{{name}}</h1><div class="form-group" id="star rating" >
 </div>
-        <br>
-        <p>{% for genre in genres %}
-        <strong>| {{ genre }} </strong>
-                {% endfor %} |</p>
-        {% if choice == 1 %}
-            <p id="Genre">{{duration}} mins || {{language}}</p>
-        {% elif choice == 0 %}
-            <p> {{season}} Seasons || {{episodes}} Episodes || Released: {{release_date}} || {% if ending_date %} Ended: {{ending_date}} {% endif %} || {{duration}} mins || {{language}}</p>
+        <p ><h5 style="color:#FFD700">{{persona}}</h5></p>
+        <p style = "color: white"> {{gender}}  </p>
+        <p><strong>Born: </strong> {{nationality}}, {{birth_date}} in {{birth_place}}</p>
+        {% if death_date %}
+        <p><strong>Died: </strong> {{death_date}}</p>
         {% endif %}
     </div>
     <br>
     <br>
     <div><img id="Movie poster" src = "data:image/png;base64,{{ photo }}"></div>
+
     <div>
-        <p id="Description">{{desc}}</p>
-        <p id="Director"><strong>Director</strong>:<br>
-            {% for director in directors %}
-            <a href="{% url 'imdb:director' director %}">{{ director }}</a><br>
-            {% endfor %}
-        </p>
-    </div>
-    <div>
-        <p id="Cast"><strong>CAST</strong></p>
-        <ul id="Cast-List">
-            {% for role, actor in cast %}
-            <a href="{% url 'imdb:artist' actor %}">{{ actor }}</a>   ||   {{ role }}
-            <br>
-            {% endfor %}
+        <p id="Cast"><strong>FILMOGRAPHY</strong></p>
+        <ul id="Filmography">
+            {% if persona == 'Actor'%}
+                {% for movie, role in filmography %}
+                <a href="{% url 'imdb:movie' movie %}">{{ movie }}</a>  ||    {{ role }}
+                <br>
+                {% endfor %}
+            {% elif persona == 'Director' %}
+                {% for movie in filmography %}
+                <a href="{% url 'imdb:movie' movie %}">{{ movie }}</a>
+                <br>
+                {% endfor %}
+            {% endif %}
         </ul>
     </div>
     <script src="{% static 'js/jquery.min.js' %}"></script>
