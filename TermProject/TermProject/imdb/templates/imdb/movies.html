@@ -32,35 +32,52 @@
                     <li class="nav-item" role="presentation"></li>
                     <li class="nav-item" role="presentation"></li>
                     <li class="nav-item dropdown"><a class="dropdown-toggle nav-link" data-toggle="dropdown" aria-expanded="false" href="#"><strong><span style="text-decoration: underline;">Menu</span></strong></a>
-                        <div class="dropdown-menu" role="menu"><a class="dropdown-item" role="presentation" href="#">First Item</a><a class="dropdown-item" role="presentation" href="#">Second Item</a><a class="dropdown-item" role="presentation" href="#">Third Item</a></div>
+                        <div class="dropdown-menu" role="menu"><a class="dropdown-item" role="presentation" href="{% url 'imdb:browse_by_genre' %}">Browse By Genre</a><a class="dropdown-item" role="presentation" href="#">hudai</a><a class="dropdown-item" role="presentation" href="#">Third Item</a></div>
                     </li>
-                </ul><i class="fa fa-search"></i><input type="search" placeholder = "Search IMDb"/>
+                </ul><i class="fa fa-search"></i>
+                <form action = "{% url 'imdb:search' %}" method="get">
+                    <input type="text" placeholder = "Search IMDb" name="search"/>
+                    <button type = "submit">Search</button>
+                </form>
                 <form class="form-inline mr-auto" target="_self">
                     <div class="form-group"><label for="search-field"></label></div>
                 </form>
             </div><a href="{% url 'imdb:login' %}"><button class="btn btn-primary" id="LogIn" type="button">Log In</button></a></div>
     </nav>
     <div class="jumbotron" id="Movie">
-        <h1 id="Movie-Name">Movie Name</h1><div class="form-group" id="star rating" >
+        <h1 id="Movie-Name">{{title}} ({{ release_date }})</h1><div class="form-group" id="star rating" >
     <div class="text-left star-rating" style="font-size: 25px;color: #f9dd16;"><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;" data-rating="1"></span><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;" data-rating="2"></span><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;"
             data-rating="3"></span><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;" data-rating="4"></span><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;" data-rating="5"></span><input class="form-control rating-value"
             type="hidden" id="rate" name="Rating" value="0" /></div>
 </div>
-        <p id="Genre">Genre</p>
+        <br>
+        <p>{% for genre in genres %}
+        <strong>| {{ genre }} </strong>
+                {% endfor %} |</p>
+        {% if choice == 1 %}
+            <p id="Genre">{{duration}} mins || {{language}}</p>
+        {% elif choice == 0 %}
+            <p> {{season}} Seasons || {{episodes}} Episodes || Released: {{release_date}} || {% if ending_date %} Ended: {{ending_date}} {% endif %} || {{duration}} mins || {{language}}</p>
+        {% endif %}
     </div>
-    <div><img id="Movie_poster"><img id="move_poster_2"></div>
+    <br>
+    <br>
+    <div><img id="Movie poster" src = "data:image/png;base64,{{ photo }}"></div>
     <div>
-        <p id="Description">Movie Description Here</p>
-        <p id="Director"><strong>Director</strong>: Director here</p>
-        <p id="Stars"><strong>Stars: </strong>Cast here</p>
+        <p id="Description">{{desc}}</p>
+        <p id="Director"><strong>Director</strong>:<br>
+            {% for director in directors %}
+            <a href="{% url 'imdb:director' director %}">{{ director }}</a><br>
+            {% endfor %}
+        </p>
     </div>
     <div>
         <p id="Cast"><strong>CAST</strong></p>
         <ul id="Cast-List">
-            <li>Item 1</li>
-            <li>Item 2</li>
-            <li>Item 3</li>
-            <li>Item 4</li>
+            {% for role, actor in cast %}
+            <a href="{% url 'imdb:artist' actor %}">{{ actor }}</a>   ||   {{ role }}
+            <br>
+            {% endfor %}
         </ul>
     </div>
     <script src="{% static 'js/jquery.min.js' %}"></script>

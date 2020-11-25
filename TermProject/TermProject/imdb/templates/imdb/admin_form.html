@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IMDB</title>
+</head>
+<body>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{form.as_p}}
+        {% if image_bool %}
+        <input type="file" name="image" accept="image/*">
+        {% endif %}
+        <button type="submit">Submit</button>
+    </form>
+
+</body>
+</html>

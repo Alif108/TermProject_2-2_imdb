@@ -1,0 +1,18 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IMDB</title>
+</head>
+<body>
+    {% for movie in movies %}
+        <a href="{% url 'imdb:movie' movie %}">{{ movie }}</a><br>
+    {% endfor %}
+
+    {% for actor in persons %}
+    <a href="{% url 'imdb:artist' actor %}">{{ actor }}</a><br>
+    {% endfor %}
+</body>
+</html>
