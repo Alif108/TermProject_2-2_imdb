@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IMDB</title>
+</head>
+<body style="background-color: black">
+    <table border="1">
+        <th><strong> <p style="color: #dad8e6"> MOVIE / SHOW </p></strong></th><th><strong><p style="color: #dad8e6">RATING</p></strong></th>
+    {% for movie, rating in movie_list %}
+        <tr><td><a href="{% url 'imdb:movie' movie %}"><p style="color: #dad8e6">{{ movie }}</p></a> </td><td> <p style="color: #dad8e6">{{ rating }}</p></td></tr>
+    {% endfor %}
+    </table>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IMDB</title>
+</head>
+<body>
+    <form method="post">
+        {% csrf_token %}
+        {{form.as_p}}
+        <button type="submit">Submit</button>
+    </form>
+        <div>
+            {% for message in messages %}
+            {{ message }}
+            {% endfor %}
+        </div>
+</body>
+</html>

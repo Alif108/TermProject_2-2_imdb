@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 
-<body>
+<body style="background-color: #000000">
     <nav class="navbar navbar-light navbar-expand-md navigation-clean-search">
         <div class="container"><button data-toggle="collapse" class="navbar-toggler" data-target="#navcol-1"><span class="sr-only">Toggle navigation</span><span class="navbar-toggler-icon"></span></button><a href="{% url 'imdb:index' %}"><img src="{% static 'img/1200px-IMDB_Logo_2016.svg.png' %}" class="img-rounded" width ="10%" class="img-fluid" height = "12%" /></a>
             <div class="collapse navbar-collapse" id="navcol-1">
@@ -32,7 +32,7 @@
                     <li class="nav-item" role="presentation"></li>
                     <li class="nav-item" role="presentation"></li>
                     <li class="nav-item dropdown"><a class="dropdown-toggle nav-link" data-toggle="dropdown" aria-expanded="false" href="#"><strong><span style="text-decoration: underline;">Menu</span></strong></a>
-                        <div class="dropdown-menu" role="menu"><a class="dropdown-item" role="presentation" href="{% url 'imdb:browse_by_genre' %}">Browse By Genre</a><a class="dropdown-item" role="presentation" href="#">hudai</a><a class="dropdown-item" role="presentation" href="#">Third Item</a></div>
+                        <div class="dropdown-menu" role="menu"><a class="dropdown-item" role="presentation" href="{% url 'imdb:browse_by_genre' %}">Browse By Genre</a><a class="dropdown-item" role="presentation" href="{% url 'imdb:search_by_year' %}">Search By Year</a><a class="dropdown-item" role="presentation" href="{% url 'imdb:top_rated_movies' %}">Top Rated Movies</a></div>
                     </li>
                 </ul><i class="fa fa-search"></i>
                 <form action = "{% url 'imdb:search' %}" method="get">
@@ -42,43 +42,64 @@
                 <form class="form-inline mr-auto" target="_self">
                     <div class="form-group"><label for="search-field"></label></div>
                 </form>
-            </div><a href="{% url 'imdb:login' %}"><button class="btn btn-primary" id="LogIn" type="button">Log In</button></a></div>
+            </div>{%if user.is_authenticated %}
+                <p style="color:white">{{user.username}}</p>
+                    </div><a href="{% url 'imdb:logout' %}"><button class="btn btn-primary" id="LogOut" type="button">Log Out</button></a></div>
+                {% else %}
+                    </div><a href="{% url 'imdb:login' %}"><button class="btn btn-primary" id="LogIn" type="button">Log In</button></a></div>
+                {% endif %}
     </nav>
     <div class="jumbotron" id="Movie">
-        <h1 id="Movie-Name">{{title}} ({{ release_date }})</h1><div class="form-group" id="star rating" >
-    <div class="text-left star-rating" style="font-size: 25px;color: #f9dd16;"><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;" data-rating="1"></span><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;" data-rating="2"></span><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;"
+        <h1 id="Movie-Name">{{title}} ({{ release_date }})</h1>
+        <img src="{% static 'img/star.png' %}" /><h3 style="color:white">{{rating}}</h3>
+        {%if user.is_authenticated %}
+        <div class="form-group" id="star rating" >
+            <div class="text-left star-rating" style="font-size: 25px;color: #f9dd16;"><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;" data-rating="1"></span>
+                <!-- <span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;" data-rating="2"></span><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;"
             data-rating="3"></span><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;" data-rating="4"></span><span class="fa fa-star-o" style="padding-right: 1px;padding-left: 1px;" data-rating="5"></span><input class="form-control rating-value"
-            type="hidden" id="rate" name="Rating" value="0" /></div>
-</div>
+            type="hidden" id="rate" name="Rating" value="0" /> -->
+            <a href="{% url 'imdb:rate' choice id %}"><button class="btn btn-primary" id="Rate" type="button">Rate</button></a>
+            <a href="{% url 'imdb:review' choice id %}"><button class="btn btn-primary" id="Review" type="button">Review</button></a>
+            </div>
+                {% endif %}
+        </div>
         <br>
-        <p>{% for genre in genres %}
+        <div>
+        <p style="color: #dad8e6">{% for genre in genres %}
         <strong>| {{ genre }} </strong>
                 {% endfor %} |</p>
         {% if choice == 1 %}
-            <p id="Genre">{{duration}} mins || {{language}}</p>
+            <p style="color: #dad8e6" id="Genre">{{duration}} mins || {{language}}</p>
         {% elif choice == 0 %}
-            <p> {{season}} Seasons || {{episodes}} Episodes || Released: {{release_date}} || {% if ending_date %} Ended: {{ending_date}} {% endif %} || {{duration}} mins || {{language}}</p>
+            <p style="color: #dad8e6"> {{season}} Seasons || {{episodes}} Episodes || Released: {{release_date}} || {% if ending_date %} Ended: {{ending_date}} {% endif %} || {{duration}} mins || {{language}}</p>
         {% endif %}
+        </div>
     </div>
     <br>
     <br>
-    <div><img id="Movie poster" src = "data:image/png;base64,{{ photo }}"></div>
+    <div style="padding: 40px"><img id="Movie poster" width="400" height="400" src = "data:image/png;base64,{{ photo }}"></div>
     <div>
-        <p id="Description">{{desc}}</p>
-        <p id="Director"><strong>Director</strong>:<br>
+        <p style="color: #dad8e6" id="Description">{{desc}}</p>
+        <p style="color: #dad8e6" id="Director"><strong><u>DIRECTOR</u></strong>:<br>
             {% for director in directors %}
             <a href="{% url 'imdb:director' director %}">{{ director }}</a><br>
             {% endfor %}
         </p>
     </div>
     <div>
-        <p id="Cast"><strong>CAST</strong></p>
+        <p style="color: #dad8e6" id="Cast"><strong><u>CAST</u></strong></p>
         <ul id="Cast-List">
             {% for role, actor in cast %}
-            <a href="{% url 'imdb:artist' actor %}">{{ actor }}</a>   ||   {{ role }}
+            <p style="color: #dad8e6"><a href="{% url 'imdb:artist' actor %}">{{ actor }}</a>   ||   {{ role }}</p>
             <br>
             {% endfor %}
         </ul>
+    </div>
+    <div  style="padding:40px">
+        <h3 style="color: #dad8e6"><u>REVIEWS</u></h3><br>
+        {% for username, review in reviews %}
+        <p style="color: #dad8e6"><b>{{ username }}</b><br> {{ review }}<br><br></p>
+    {% endfor %}
     </div>
     <script src="{% static 'js/jquery.min.js' %}"></script>
     <script src="{% static 'bootstrap/js/bootstrap.min.js' %}"></script>

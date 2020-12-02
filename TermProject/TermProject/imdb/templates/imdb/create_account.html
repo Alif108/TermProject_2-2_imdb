@@ -25,12 +25,18 @@
 
 <body>
     <div id="create_account_button-1" class="login-clean">
-        <form method="post"><a href="{% url 'imdb:index' %}"><img id="logo" src="{% static 'img/1200px-IMDB_Logo_2016.svg.png' %}"></a>
-            <h2 class="sr-only">Login Form</h2><input type="text" class="form-control" id="username" placeholder="Username" />
-            <div class="form-group"><input class="form-control" type="email" id="email" name="email" placeholder="Email"></div>
-            <div class="form-group"><input class="form-control" type="password" name="password" placeholder="Password"></div><input type="password" class="form-control" id="confirm_passoword" placeholder="Confirm Password" />
+        <form method="post">
+            {% csrf_token %}
+            <a href="{% url 'imdb:index' %}"><img id="logo" src="{% static 'img/1200px-IMDB_Logo_2016.svg.png' %}"></a>
+            <h2 class="sr-only">Login Form</h2><input type="text" class="form-control" id="username" name="username" placeholder="Username" />
+            <div class="form-group"><input class="form-control" type="password" name="password1" placeholder="Password"></div><input type="password" name="password2" class="form-control" id="confirm_password" placeholder="Confirm Password" />
             <div class="form-group"><button class="btn btn-primary btn-block" type="submit">Create Account</button></div>
         </form>
+        <div>
+            {% for message in messages %}
+            {{ message }}
+            {% endfor %}
+        </div>
     </div>
     <script src="{% static 'js/jquery.min.js' %}"></script>
     <script src="{% static 'bootstrap/js/bootstrap.min.js' %}"></script>

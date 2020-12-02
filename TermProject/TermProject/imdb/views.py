@@ -1,4 +1,4 @@
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from .forms import *
 from django.core.files.storage import FileSystemStorage
 import cx_Oracle
@@ -6,9 +6,189 @@ from django.http import HttpResponse
 from .models import *
 import base64
 import random
-
+from django.contrib.auth.models import User, auth
+from django.contrib import messages
 
 # Create your views here.
+
+def create_account(request):
+
+    if request.method == 'POST':
+        username = request.POST['username']
+        password1 = request.POST['password1']
+        password2 = request.POST['password2']
+
+        if password2 == password1:
+
+            if User.objects.filter(username=username).exists():                                 ###IF USERNAME IS TAKEN
+                messages.info(request, 'Username Taken')
+                return redirect("/create_account")
+
+            else:
+
+                dict = {'username': username, 'password': password1}                            ###FOR ORACLE DATABASE
+                imdb_user = USERS()
+                imdb_user.insert(dict)
+
+                usID = imdb_user.get_user_id(username)
+                log = LOG_TABLE_USER()
+                log.insert(usID)
+
+                user = User.objects.create_user(username=username, password=password1)          ### FOR DJANGO
+                user.save()
+                print('user created')
+                return redirect('/login')
+
+        else:
+            messages.info(request, 'Password not matching')
+            return redirect("/create_account")
+
+        #return redirect('/')
+
+    else:
+        return render(request, "imdb/create_account.html")
+
+
+def login(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+
+        user = auth.authenticate(username = username, password = password)
+
+        log = LOG_TABLE_USER()
+        imdb_user = USERS()
+
+        if user is not None:
+            auth.login(request, user)                                               ###  AUTHENTICATING USER
+
+            usID = imdb_user.get_user_id(username)                                  ### UPDATING LOG TABLE
+            log.update_login(usID)
+
+            return redirect('/')
+        else:
+            messages.info(request, 'invalid credentials')
+            return redirect('/login')
+    else:
+        return render(request, "imdb/login.html")
+
+
+def logout(request):
+
+    imdb_user = USERS()
+    log = LOG_TABLE_USER()
+
+    current_user = request.user
+    usID = imdb_user.get_user_id(current_user.username)
+
+    #print(current_user.username)
+
+    auth.logout(request)
+
+    log.update_logOut(usID)
+
+    return redirect('/')
+
+
+def rate(request, choice, id):
+
+    if request.method == "POST":
+        form = RatingForm(request.POST)
+        if form.is_valid():
+            rating = form.cleaned_data['rating']
+            user = request.user
+
+            imdb_user = USERS()
+
+            usID = imdb_user.get_user_id(user.username)
+
+            if choice == 1:
+                movie = MOVIE()
+                UM = USER_MOVIE()
+                dict = {'rating': rating, 'usID': usID, 'mID': id}
+
+                if UM.record_exists({'usID': usID, 'mID': id}) == 1:
+                    # print('yes previous record')
+                    UM.update_rating(dict)
+                    movie.update_rating(id)
+
+                elif UM.record_exists({'usID': usID, 'mID': id}) == 0:
+                    # print('no previous record')
+                    UM.insert_rating(dict)
+                    movie.update_rating(id)
+
+                else:
+                    return
+
+            elif choice == 0:
+                show = SHOW()
+                US = USER_SHOW()
+                dict = {'rating': rating, 'usID': usID, 'sID': id}
+
+                if US.record_exists(dict) == 1:
+                    US.update_rating(dict)
+                    show.update_rating(id)
+
+                elif US.record_exists(dict) == 0:
+                    US.insert_rating(dict)
+                    show.update_rating(id)
+
+                else:
+                    return
+
+        return redirect('/')
+
+    form = RatingForm()
+
+    return render(request, 'imdb/rate.html', {'form': form})
+
+
+def review(request, choice, id):
+
+    if request.method == "POST":
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.cleaned_data['review']
+            user = request.user
+
+            imdb_user = USERS()
+
+            usID = imdb_user.get_user_id(user.username)
+
+            if choice == 1:
+                UM = USER_MOVIE()
+                dict = {'review': review, 'usID': usID, 'mID': id}
+
+                if UM.record_exists({'usID': usID, 'mID': id}) == 1:
+                    # print('yes previous record')
+                    UM.update_review(dict)
+
+                elif UM.record_exists({'usID': usID, 'mID': id}) == 0:
+                    # print('no previous record')
+                    UM.insert_review(dict)
+
+                else:
+                    return
+
+            elif choice == 0:
+                US = USER_SHOW()
+                dict = {'review': review, 'usID': usID, 'sID': id}
+
+                if US.record_exists(dict) == 1:
+                    US.update_review(dict)
+
+                elif US.record_exists(dict) == 0:
+                    US.insert_review(dict)
+
+                else:
+                    return
+
+        return redirect('/')
+
+    form = ReviewForm()
+
+    return render(request, 'imdb/rate.html', {'form': form})
+
 
 def index(request):
     ###SHOWING A RANDOM MOVIE
@@ -44,9 +224,6 @@ def index(request):
     return render(request, "imdb/index.html", dict)
 
 
-# def index(request):
-#     return render(request, "imdb/index.html")
-
 
 def movie(request, movie):
     m, s = movie_or_show(movie)
@@ -77,10 +254,13 @@ def movie(request, movie):
         encoded = base64.b64encode(photo)
         encoded = encoded.decode('utf-8')
 
+        if rating == 0:
+            rating = 'Not Rated'
+
         query = """ SELECT C."role", A."Name" 
                 FROM ARTIST_MOVIE C, ARTIST A
                 WHERE C."mID" = (:mID)
-                AND C."aID" = A."aID" """
+                AND C."aID" = A."aID" """                               ### JOIN
 
         c.execute(query, {'mID': mID})
 
@@ -89,7 +269,7 @@ def movie(request, movie):
         query = """ SELECT D."Name" 
                 FROM DIRECTOR D, DIRECTOR_MOVIE DM
                 WHERE DM."mID" = (:mID)
-                AND DM."dID" = D."dID" """
+                AND DM."dID" = D."dID" """                              ### JOIN
 
         c.execute(query, {'mID': mID})
 
@@ -102,7 +282,7 @@ def movie(request, movie):
         query = """ SELECT G."Name"
                 FROM GENRE G, MOVIE_GENRE MG
                 WHERE MG."mID" = (:mID)
-                AND MG."gID" = G."gID" """
+                AND MG."gID" = G."gID" """                          ### JOIN
 
         c.execute(query, {'mID': mID})
 
@@ -113,8 +293,11 @@ def movie(request, movie):
         for genre in genre_list:
             genres.append(genre[0])
 
-        dict = {'title': title, 'release_date': date, 'duration': duration, 'rating': rating, 'language': language,
-                'desc': desc, 'photo': encoded, 'cast': cast, 'directors': director, 'choice': 1, 'genres': genres}
+        movie_obj = MOVIE()
+        reviews = movie_obj.get_reviews(mID)
+
+        dict = {'id': mID, 'title': title, 'release_date': date, 'duration': duration, 'rating': rating, 'language': language,
+                'desc': desc, 'photo': encoded, 'cast': cast, 'directors': director, 'choice': 1, 'genres': genres, 'reviews': reviews}
 
     elif s:
         query = """     SELECT "sID", "Title", "Season", "Episodes", TO_CHAR("Release_Date", 'YYYY'), 
@@ -141,10 +324,13 @@ def movie(request, movie):
         encoded = base64.b64encode(photo)
         encoded = encoded.decode('utf-8')
 
+        if rating == 0:
+            rating = 'Not Rated'
+
         query = """ SELECT C."role", A."Name" 
                         FROM ARTIST_SHOW C, ARTIST A
                         WHERE C."sID" = (:sID)
-                        AND C."aID" = A."aID" """
+                        AND C."aID" = A."aID" """                               ### JOIN
 
         c.execute(query, {'sID': sID})
 
@@ -153,7 +339,7 @@ def movie(request, movie):
         query = """ SELECT D."Name" 
                         FROM DIRECTOR D, DIRECTOR_SHOW DS
                         WHERE DS."sID" = (:sID)
-                        AND DS."dID" = D."dID" """
+                        AND DS."dID" = D."dID" """                              ### JOIN
 
         c.execute(query, {'sID': sID})
 
@@ -166,7 +352,7 @@ def movie(request, movie):
         query = """ SELECT G."Name"
                     FROM GENRE G, SHOW_GENRE SG
                     WHERE SG."sID" = (:sID)
-                    AND SG."gID" = G."gID" """
+                    AND SG."gID" = G."gID" """                              ### JOIN
 
         c.execute(query, {'sID': sID})
 
@@ -177,21 +363,233 @@ def movie(request, movie):
         for genre in genre_list:
             genres.append(genre[0])
 
-        dict = {'title': title, 'season': season, 'episodes': episodes, 'release_date': release_date,
-                'ending_date': ending_date, 'rating':rating, 'duration': duration, 'language': language, 'photo': encoded, 'desc': desc,
-                'cast': cast, 'directors': directors, 'choice': 0, 'genres': genres}
+        show_obj = SHOW()
+        reviews = show_obj.get_reviews(sID)
+
+        dict = {'id': sID, 'title': title, 'season': season, 'episodes': episodes, 'release_date': release_date,
+                'ending_date': ending_date, 'rating': rating, 'duration': duration, 'language': language, 'photo': encoded, 'desc': desc,
+                'cast': cast, 'directors': directors, 'choice': 0, 'genres': genres, 'reviews': reviews}
 
     conn.close()
     return render(request, "imdb/movies.html", dict)
 
 
-def login(request):
-    return render(request, "imdb/login.html")
+def artist(request, actor):
+
+    a, d = artist_or_director(actor)
+
+    dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+    conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+    c = conn.cursor()
+
+    if a:
+        query = """ SELECT * 
+                FROM IMDB.ARTIST 
+                WHERE UPPER("Name") LIKE UPPER(:name) """
+
+        persona = 'Actor'
+
+    elif d:
+        query = """ SELECT * 
+                    FROM IMDB.DIRECTOR 
+                    WHERE UPPER("Name") LIKE UPPER(:name) """
+
+        persona = 'Director'
+
+    c.execute(query, {'name': actor})
+
+    data = c.fetchall()
+
+    aID = data[0][0]
+    name = data[0][1]
+    gender = data[0][2]
+    birth_date = data[0][3]
+    nationality = data[0][4]
+    birth_place = data[0][5]
+    death_date = data[0][6]
+    photo = data[0][7].read()
+    bio = data[0][8]
+
+    encoded = base64.b64encode(photo)
+    encoded = encoded.decode('utf-8')
+
+    if a:
+        filmography = get_works(name)
+    elif d:
+        filmography = get_directions(name)
+
+    dict = {'name':name, 'gender':gender, 'birth_date':birth_date, 'nationality':nationality,
+            'birth_place':birth_place, 'death_date': death_date, 'photo':encoded, 'persona': persona, 'filmography': filmography, 'bio':bio}
+
+    conn.close()
+    return render(request, "imdb/artist.html", dict)
 
 
-def create(request):
-    return render(request, "imdb/create_account.html")
+def search(request):
 
+    if request.method == 'GET':
+        name = request.GET.get('search')
+
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ SELECT "Title", "Photo" FROM IMDB.MOVIE WHERE UPPER("Title") LIKE UPPER(CONCAT(CONCAT('%',:name), '%'))
+                    UNION ALL
+                    SELECT "Title", "Photo" FROM IMDB.SHOW WHERE UPPER("Title") LIKE UPPER(CONCAT(CONCAT('%',:name), '%')) """       #UNION
+
+        cur.execute(query, {'name': name})
+
+        movie_list = cur.fetchall()
+
+        movies = []
+
+        for movie in movie_list:
+            # movies.append(movie[0])
+            title = movie[0]
+            photo = movie[1].read()
+
+            encoded = base64.b64encode(photo)
+            encoded = encoded.decode('utf-8')
+
+            movies.append([title, encoded])
+
+        query = """ SELECT "Name", "Photo" FROM IMDB.ARTIST WHERE UPPER("Name") LIKE UPPER(CONCAT(CONCAT('%',:name), '%'))
+                    UNION ALL
+                    SELECT "Name", "Photo" FROM IMDB.DIRECTOR WHERE UPPER("Name") LIKE UPPER(CONCAT(CONCAT('%',:name), '%')) """     ###UNION
+
+        cur.execute(query, {'name': name})
+
+        persons_list = cur.fetchall()
+
+        persons = []
+
+        for person in persons_list:
+            # persons.append(person[0])
+            naam = person[0]
+            photo = person[1].read()
+
+            encoded = base64.b64encode(photo)
+            encoded = encoded.decode('utf-8')
+
+            persons.append([naam, encoded])
+
+        dict = {'movies': movies, 'persons': persons}
+
+        conn.close()
+
+        return render(request, 'imdb/search_list.html', dict)
+
+
+def browse_by_genre(request):
+    g = GENRE()
+    genres = g.read()
+
+    genre_list = []
+
+    for genre in genres:
+        genre_list.append(genre[1])
+
+    dict = {'genre_list': genre_list}
+
+    return render(request, "imdb/browse_movie_by_genre.html", dict)
+
+
+def movies_of_genre(request, genre):
+    dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+    conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+    c = conn.cursor()
+
+    movie_list = []
+
+    query = """ SELECT M."Title"
+                FROM MOVIE M, GENRE G, MOVIE_GENRE MG
+                WHERE UPPER(G."Name") LIKE UPPER(:genre)
+                AND G."gID" = MG."gID"
+                AND M."mID" = MG."mID" 
+                UNION
+                SELECT S."Title"
+                FROM SHOW S, GENRE G, SHOW_GENRE SG
+                WHERE UPPER(G."Name") LIKE UPPER(:genre)
+                AND G."gID" = SG."gID"
+                AND S."sID" = SG."sID" """                                  ### JOIN AND UNION
+
+    c.execute(query, {'genre': genre})
+
+    movies = c.fetchall()
+
+    for movie in movies:
+        movie_list.append(movie[0])
+
+    dict = {'movie_list': movie_list}
+
+    return render(request, "imdb/movies_of_this_list.html", dict)
+
+
+def search_by_year(request):
+    if request.method == "POST":
+        form = SearchByYearForm(request.POST)
+        if form.is_valid():
+            start_year = form.cleaned_data['start_year']
+            end_year = form.cleaned_data['end_year']
+
+
+            dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+            conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+            c = conn.cursor()
+
+            movie_list = []
+
+            query = """ SELECT "Title" FROM IMDB.MOVIE
+                        WHERE TO_NUMBER(TO_CHAR("Release_Date", 'YYYY')) BETWEEN (:start_year) AND (:end_year)
+                        UNION
+                        SELECT "Title" FROM IMDB.SHOW
+                        WHERE TO_NUMBER(TO_CHAR("Release_Date", 'YYYY')) BETWEEN (:start_year) AND (:end_year)"""  ### UNION
+
+            c.execute(query, {'start_year': start_year, 'end_year': end_year})
+
+            movies = c.fetchall()
+
+            for movie in movies:
+                movie_list.append(movie[0])
+
+            dict = {'movie_list': movie_list}
+
+            if len(movie_list) == 0:
+                messages.info(request, 'No Movie Or Show Found')
+                return redirect('/search_by_year')
+
+            return render(request, "imdb/movies_of_this_list.html", dict)
+
+    form = SearchByYearForm()
+
+    return render(request, "imdb/rate.html", {'form': form})
+
+
+def top_rated_movies(request):
+    dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+    conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+    c = conn.cursor()
+
+    #movie_list = []
+
+    query = """ SELECT "Title", "Rating" FROM 
+                (SELECT "Title", "Rating" FROM MOVIE
+                UNION
+                SELECT "Title", "Rating" FROM SHOW)
+                ORDER BY "Rating" DESC """                              ### SUB-QUERY
+
+    c.execute(query)
+
+    movie_list = c.fetchall()
+
+    dict = {'movie_list': movie_list}
+
+    return render(request, "imdb/top_rated_movies.html", dict)
+
+
+
+###ADMIN_FUNCTIONS
 
 def admin_update(request):
     return render(request, "imdb/admin_update_db.html")
@@ -206,13 +604,13 @@ def admin_movie_form(request):
             rating = form.cleaned_data['rating']
             duration = form.cleaned_data['duration']
             language = form.cleaned_data['language']
-            image = request.FILES['image'].read()  # read() CONVERTS IT FROM 'UploadedFile' to BYTES
+            image = request.FILES['image'].read()                                           # read() CONVERTS IT FROM 'UploadedFile' to BYTES
             description = form.cleaned_data['description']
             genre = form.cleaned_data.get('genre')
 
         m = MOVIE()
-        mg = MOVIE_GENRE()  # to populate the movie_genre table
-        mID = m.get_next_ID()  # get the ID of the movie to be inserted next
+        mg = MOVIE_GENRE()                                                                  # to populate the movie_genre table
+        mID = m.get_next_ID()                                                               # get the ID of the movie to be inserted next
 
         dict = {'mID': mID, 'title': title, 'release_date': release_date, 'rating': rating, 'duration': duration,
                 'language': language, 'photo': image, 'description': description}
@@ -241,7 +639,7 @@ def admin_show_form(request):
             rating = form.cleaned_data['rating']
             episode_duration = form.cleaned_data['episode_duration']
             language = form.cleaned_data['language']
-            image = request.FILES['image'].read()  # read() CONVERTS IT FROM 'UpoloadedFile' to BYTES
+            image = request.FILES['image'].read()                                          # read() CONVERTS IT FROM 'UploadedFile' to BYTES
             description = form.cleaned_data['description']
 
         s = SHOW()
@@ -290,10 +688,13 @@ def admin_artist_form(request):
             nationality = form.cleaned_data['nationality']
             birth_place = form.cleaned_data['birth_place']
             death_date = form.cleaned_data['death_date']
-            image = request.FILES['image'].read()  # read() CONVERTS IT FROM 'UpoloadedFile' to BYTES
+            bio = form.cleaned_data['bio']
+            image = request.FILES['image'].read()                                # read() CONVERTS IT FROM 'UploadedFile' to BYTES
+
 
         dict = {'name': name, 'gender': gender, 'birth_date': birth_date, 'nationality': nationality,
-                'birth_place': birth_place, 'death_date': death_date, 'photo': image}
+                'birth_place': birth_place, 'death_date': death_date, 'photo': image, 'bio': bio}
+
         a = ARTIST()
         a.insert(dict)
 
@@ -314,9 +715,10 @@ def admin_director_form(request):
             birth_place = form.cleaned_data['birth_place']
             death_date = form.cleaned_data['death_date']
             image = request.FILES['image'].read()  # read() CONVERTS IT FROM 'UpoloadedFile' to BYTES
+            bio = form.cleaned_data['bio']
 
         dict = {'name': name, 'gender': gender, 'birth_date': birth_date, 'nationality': nationality,
-                'birth_place': birth_place, 'death_date': death_date, 'photo': image}
+                'birth_place': birth_place, 'death_date': death_date, 'photo': image, 'bio': bio}
         d = DIRECTOR()
         d.insert(dict)
 
@@ -374,100 +776,6 @@ def admin_artist_show_form(request):
     return render(request, "imdb/admin_form.html", {'form': form, 'image_bool': image_bool})
 
 
-def browse_by_genre(request):
-    g = GENRE()
-    genres = g.read()
-
-    genre_list = []
-
-    for genre in genres:
-        genre_list.append(genre[1])
-
-    dict = {'genre_list': genre_list}
-
-    return render(request, "imdb/browse_movie_by_genre.html", dict)
-
-
-def movies_of_genre(request, genre):
-    dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
-    conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
-    c = conn.cursor()
-
-    movie_list = []
-
-    query = """ SELECT M."Title"
-                FROM MOVIE M, GENRE G, MOVIE_GENRE MG
-                WHERE UPPER(G."Name") LIKE UPPER(:genre)
-                AND G."gID" = MG."gID"
-                AND M."mID" = MG."mID" 
-                UNION
-                SELECT S."Title"
-                FROM SHOW S, GENRE G, SHOW_GENRE SG
-                WHERE UPPER(G."Name") LIKE UPPER(:genre)
-                AND G."gID" = SG."gID"
-                AND S."sID" = SG."sID" """
-
-    c.execute(query, {'genre': genre})
-
-    movies = c.fetchall()
-
-    for movie in movies:
-        movie_list.append(movie[0])
-
-    dict = {'movie_list': movie_list}
-
-    return render(request, "imdb/movies_of_this_genre.html", dict)
-
-
-def artist(request, actor):
-
-    a, d = artist_or_director(actor)
-
-    dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
-    conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
-    c = conn.cursor()
-
-    if a:
-        query = """ SELECT * 
-                FROM IMDB.ARTIST 
-                WHERE UPPER("Name") LIKE UPPER(:name) """
-
-        persona = 'Actor'
-
-    elif d:
-        query = """ SELECT * 
-                    FROM IMDB.DIRECTOR 
-                    WHERE UPPER("Name") LIKE UPPER(:name) """
-
-        persona = 'Director'
-
-    c.execute(query, {'name': actor})
-
-    data = c.fetchall()
-
-    aID = data[0][0]
-    name = data[0][1]
-    gender = data[0][2]
-    birth_date = data[0][3]
-    nationality = data[0][4]
-    birth_place = data[0][5]
-    death_date = data[0][6]
-    photo = data[0][7].read()
-
-    encoded = base64.b64encode(photo)
-    encoded = encoded.decode('utf-8')
-
-    if a:
-        filmography = get_works(name)
-    elif d:
-        filmography = get_directions(name)
-
-    dict = {'name':name, 'gender':gender, 'birth_date':birth_date, 'nationality':nationality,
-            'birth_place':birth_place, 'death_date':death_date, 'photo':encoded, 'persona': persona, 'filmography': filmography}
-
-    conn.close()
-    return render(request, "imdb/artist.html", dict)
-
 def admin_director_movie_form(request):
     if request.method == "POST":
         form = DirectorMovieForm(request.POST)
@@ -489,6 +797,7 @@ def admin_director_movie_form(request):
     image_bool = False
 
     return render(request, "imdb/admin_form.html", {'form': form, 'image_bool': image_bool})
+
 
 def admin_director_show_form(request):
     if request.method == "POST":
@@ -514,43 +823,123 @@ def admin_director_show_form(request):
     return render(request, "imdb/admin_form.html", {'form': form, 'image_bool': image_bool})
 
 
-def search(request):
+def admin_update_artist_death_date(request):
+    if request.method == "POST":
+        form = AdminUpdateDeathDate(request.POST)
+        if form.is_valid():
+            name = form.cleaned_data['name']
+            death_date = form.cleaned_data['death_date']
 
-    if request.method == 'GET':
-        name = request.GET.get('search')
+        artist = ARTIST()
 
-        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
-        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
-        cur = conn.cursor()
+        aID = artist.get_artist_id(name)
 
-        query = """ SELECT "Title" FROM IMDB.MOVIE WHERE UPPER("Title") LIKE UPPER(CONCAT(CONCAT('%',:name), '%'))
-                    UNION
-                    SELECT "Title" FROM IMDB.SHOW WHERE UPPER("Title") LIKE UPPER(CONCAT(CONCAT('%',:name), '%')) """
+        artist.update_death_date(aID, death_date)
 
-        cur.execute(query, {'name': name})
+    form = AdminUpdateDeathDate()
+    image_bool = False
 
-        movie_list = cur.fetchall()
+    return render(request, "imdb/admin_form.html", {'form': form, 'image_bool': image_bool})
 
-        movies = []
 
-        for movie in movie_list:
-            movies.append(movie[0])
+def admin_update_director_death_date(request):
+    if request.method == "POST":
+        form = AdminUpdateDeathDate(request.POST)
+        if form.is_valid():
+            name = form.cleaned_data['name']
+            death_date = form.cleaned_data['death_date']
 
-        query = """ SELECT "Name" FROM IMDB.ARTIST WHERE UPPER("Name") LIKE UPPER(CONCAT(CONCAT('%',:name), '%'))
-                    UNION
-                    SELECT "Name" FROM IMDB.DIRECTOR WHERE UPPER("Name") LIKE UPPER(CONCAT(CONCAT('%',:name), '%')) """
+        director = DIRECTOR()
 
-        cur.execute(query, {'name': name})
+        dID = director.get_ID(name)
 
-        persons_list = cur.fetchall()
+        director.update_death_date(dID, death_date)
 
-        persons = []
+    form = AdminUpdateDeathDate()
+    image_bool = False
 
-        for person in persons_list:
-            persons.append(person[0])
+    return render(request, "imdb/admin_form.html", {'form': form, 'image_bool': image_bool})
 
-        dict = {'movies': movies, 'persons': persons}
 
-        conn.close()
+def admin_update_show_season(request):
+    if request.method == "POST":
+        form = AdminUpdateShowSeason(request.POST)
+        if form.is_valid():
+            title = form.cleaned_data['title']
+            season = form.cleaned_data['season']
+            episodes = form.cleaned_data['episodes']
+            ending_date = form.cleaned_data['ending_date']
 
-        return render(request, 'imdb/search_list.html', dict)
+        show = SHOW()
+
+        sID = show.get_show_id(title)
+        show.update_season(sID, season, episodes, ending_date)
+
+    form = AdminUpdateShowSeason()
+    image_bool = False
+
+    return render(request, "imdb/admin_form.html", {'form': form, 'image_bool': image_bool})
+
+
+def admin_delete_movie(request):
+    if request.method == "POST":
+        form = DeleteMovieForm(request.POST)
+        if form.is_valid():
+            mID = form.cleaned_data['mID']
+
+        movie = MOVIE()
+
+        movie.delete(mID)
+
+    form = DeleteMovieForm()
+    image_bool = False
+
+    return render(request, "imdb/admin_form.html", {'form': form, 'image_bool': image_bool})
+
+
+def admin_delete_show(request):
+    if request.method == "POST":
+        form = DeleteShowForm(request.POST)
+        if form.is_valid():
+            sID = form.cleaned_data['sID']
+
+        show = SHOW()
+
+        show.delete(sID)
+
+    form = DeleteShowForm()
+    image_bool = False
+
+    return render(request, "imdb/admin_form.html", {'form': form, 'image_bool': image_bool})
+
+
+def admin_delete_artist(request):
+    if request.method == "POST":
+        form = DeleteArtistForm(request.POST)
+        if form.is_valid():
+            aID = form.cleaned_data['aID']
+
+        artist = ARTIST()
+
+        artist.delete(aID)
+
+    form = DeleteArtistForm()
+    image_bool = False
+
+    return render(request, "imdb/admin_form.html", {'form': form, 'image_bool': image_bool})
+
+
+def admin_delete_director(request):
+    if request.method == "POST":
+        form = DeleteDirectorForm(request.POST)
+        if form.is_valid():
+            dID = form.cleaned_data['dID']
+
+        director = DIRECTOR()
+
+        director.delete(dID)
+
+    form = DeleteDirectorForm()
+    image_bool = False
+
+    return render(request, "imdb/admin_form.html", {'form': form, 'image_bool': image_bool})

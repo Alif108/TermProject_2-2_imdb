@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IMDB</title>
+</head>
+<body style="background-color: black">
+    <ul>
+    {% for movie in movie_list %}
+        <a href="{% url 'imdb:movie' movie %}"><li>{{ movie }}</li></a>
+    {% endfor %}
+    </ul>
+</body>
+</html>

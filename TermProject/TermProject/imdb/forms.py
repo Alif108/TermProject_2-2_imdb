@@ -5,7 +5,8 @@ g = GENRE()
 
 YEARS = [x for x in range(1900, 2021)]
 GENRE_CHOICES = g.read()
-GENDER = [('male','Male'), ('female','Female'), ('other', 'Other')]
+GENDER = [('Male','Male'), ('Female','Female'), ('Other', 'Other')]
+RATE_CHOICES = [(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')]
 
 class MovieForm(forms.Form):
     title = forms.CharField()
@@ -41,6 +42,7 @@ class ArtistForm(forms.Form):
     nationality = forms.CharField()
     birth_place = forms.CharField()
     death_date = forms.DateField(required = False, widget=forms.SelectDateWidget(years = YEARS))
+    bio = forms.CharField()
 
 
 class ArtistMovieForm(forms.Form):
@@ -63,3 +65,36 @@ class DirectorMovieForm(forms.Form):
 class DirectorShowForm(forms.Form):
     show = forms.CharField()
     director = forms.CharField()
+
+class AdminUpdateDeathDate(forms.Form):
+    name = forms.CharField()
+    death_date = forms.DateField(widget=forms.SelectDateWidget(years=YEARS))
+
+class AdminUpdateShowSeason(forms.Form):
+    title = forms.CharField()
+    season = forms.IntegerField()
+    episodes = forms.IntegerField(required = False)
+    ending_date = forms.DateField(required = False, widget = forms.SelectDateWidget(years = YEARS))
+
+class RatingForm(forms.Form):
+    rating = forms.ChoiceField(choices = RATE_CHOICES, widget=forms.Select(), required=True)
+
+class ReviewForm(forms.Form):
+    review = forms.CharField()
+
+
+class SearchByYearForm(forms.Form):
+    start_year = forms.ChoiceField(choices = ((str(x), x) for x in range(1900,2021)), widget=forms.Select(), required=True)
+    end_year = forms.ChoiceField(choices = ((str(x), x) for x in range(1900,2021)), widget=forms.Select(), required=True)
+
+class DeleteArtistForm(forms.Form):
+    aID = forms.IntegerField()
+
+class DeleteDirectorForm(forms.Form):
+    dID = forms.IntegerField()
+
+class DeleteMovieForm(forms.Form):
+    mID = forms.IntegerField()
+
+class DeleteShowForm(forms.Form):
+    sID = forms.IntegerField()

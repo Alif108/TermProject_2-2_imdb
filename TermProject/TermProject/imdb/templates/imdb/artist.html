@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 
-<body>
+<body style="background-color: black">
     <nav class="navbar navbar-light navbar-expand-md navigation-clean-search">
         <div class="container"><button data-toggle="collapse" class="navbar-toggler" data-target="#navcol-1"><span class="sr-only">Toggle navigation</span><span class="navbar-toggler-icon"></span></button><a href="{% url 'imdb:index' %}"><img src="{% static 'img/1200px-IMDB_Logo_2016.svg.png' %}" class="img-rounded" width ="10%" class="img-fluid" height = "12%" /></a>
             <div class="collapse navbar-collapse" id="navcol-1">
@@ -32,7 +32,7 @@
                     <li class="nav-item" role="presentation"></li>
                     <li class="nav-item" role="presentation"></li>
                     <li class="nav-item dropdown"><a class="dropdown-toggle nav-link" data-toggle="dropdown" aria-expanded="false" href="#"><strong><span style="text-decoration: underline;">Menu</span></strong></a>
-                        <div class="dropdown-menu" role="menu"><a class="dropdown-item" role="presentation" href="{% url 'imdb:browse_by_genre' %}">Browse By Genre</a><a class="dropdown-item" role="presentation" href="#">hudai</a><a class="dropdown-item" role="presentation" href="#">Third Item</a></div>
+                        <div class="dropdown-menu" role="menu"><a class="dropdown-item" role="presentation" href="{% url 'imdb:browse_by_genre' %}">Browse By Genre</a><a class="dropdown-item" role="presentation" href="{% url 'imdb:search_by_year' %}">Search By Year</a><a class="dropdown-item" role="presentation" href="{% url 'imdb:top_rated_movies' %}">Top Rated Movies</a></div>
                     </li>
                 </ul><i class="fa fa-search"></i>
                 <form action = "{% url 'imdb:search' %}" method="get">
@@ -42,33 +42,41 @@
                 <form class="form-inline mr-auto" target="_self">
                     <div class="form-group"><label for="search-field"></label></div>
                 </form>
-            </div><a href="{% url 'imdb:login' %}"><button class="btn btn-primary" id="LogIn" type="button">Log In</button></a></div>
+            </div>{%if user.is_authenticated %}
+                <p style="color:white">{{user.username}}</p>
+                    </div><a href="{% url 'imdb:logout' %}"><button class="btn btn-primary" id="LogOut" type="button">Log Out</button></a></div>
+                {% else %}
+                    </div><a href="{% url 'imdb:login' %}"><button class="btn btn-primary" id="LogIn" type="button">Log In</button></a></div>
+                {% endif %}
     </nav>
     <div class="jumbotron" id="Movie">
         <h1 id="Movie-Name">{{name}}</h1><div class="form-group" id="star rating" >
 </div>
         <p ><h5 style="color:#FFD700">{{persona}}</h5></p>
         <p style = "color: white"> {{gender}}  </p>
-        <p><strong>Born: </strong> {{nationality}}, {{birth_date}} in {{birth_place}}</p>
+        <p style="color: #dad8e6"><strong>Born: </strong> {{nationality}}, {{birth_date}} in {{birth_place}}</p>
         {% if death_date %}
-        <p><strong>Died: </strong> {{death_date}}</p>
+        <p style="color: #dad8e6"><strong>Died: </strong> {{death_date}}</p>
         {% endif %}
     </div>
     <br>
     <br>
-    <div><img id="Movie poster" src = "data:image/png;base64,{{ photo }}"></div>
+    <div style="padding:40px"><img width="300" height="400" id="Movie poster" src = "data:image/png;base64,{{ photo }}"></div>
+    <div style="padding:40px"><p><strong><p style="color: #dad8e6">Bio: </strong>{{ bio }}</p></div>
+    <br>
+    <br>
 
     <div>
-        <p id="Cast"><strong>FILMOGRAPHY</strong></p>
-        <ul id="Filmography">
+        <p style="color: #dad8e6" id="Cast"><strong>FILMOGRAPHY</strong></p>
+        <ul  id="Filmography">
             {% if persona == 'Actor'%}
                 {% for movie, role in filmography %}
-                <a href="{% url 'imdb:movie' movie %}">{{ movie }}</a>  ||    {{ role }}
+                <p style="color: #dad8e6"><a href="{% url 'imdb:movie' movie %}">{{ movie }}</a>  ||    {{ role }}</p>
                 <br>
                 {% endfor %}
             {% elif persona == 'Director' %}
                 {% for movie in filmography %}
-                <a href="{% url 'imdb:movie' movie %}">{{ movie }}</a>
+            <p style="color: #dad8e6"><a href="{% url 'imdb:movie' movie %}">{{ movie }}</a></p>
                 <br>
                 {% endfor %}
             {% endif %}

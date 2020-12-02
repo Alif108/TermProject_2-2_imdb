@@ -7,14 +7,21 @@
     <title>IMDB</title>
 </head>
 <body>
-    <a href="{% url 'imdb:admin_movie_form' %}"><button type="button">Add Movie</button></a>
-    <a href="{% url 'imdb:admin_show_form' %}"><button type="button">Add Show</button></a>
-    <a href="{% url 'imdb:admin_genre_form' %}"><button type="button">Add Genre</button></a>
-    <a href="{% url 'imdb:admin_artist_form' %}"><button type="button">Add Artist</button></a>
-    <a href="{% url 'imdb:admin_director_form' %}"><button type="button">Add Director</button></a>
-    <a href="{% url 'imdb:admin_artist_movie_form' %}"><button type="button">Add Movie Cast</button></a>
-    <a href="{% url 'imdb:admin_artist_show_form' %}"><button type="button">Add Show Cast</button></a>
-    <a href="{% url 'imdb:admin_director_movie_form' %}"><button type="button">Add Director of Movie</button></a>
-    <a href="{% url 'imdb:admin_director_show_form' %}"><button type="button">Add Director of Show</button></a>
+    <a href="{% url 'imdb:admin_movie_form' %}"><button type="button">Add Movie</button></a><br>
+    <a href="{% url 'imdb:admin_show_form' %}"><button type="button">Add Show</button></a><br>
+    <a href="{% url 'imdb:admin_genre_form' %}"><button type="button">Add Genre</button></a><br>
+    <a href="{% url 'imdb:admin_artist_form' %}"><button type="button">Add Artist</button></a><br>
+    <a href="{% url 'imdb:admin_director_form' %}"><button type="button">Add Director</button></a><br>
+    <a href="{% url 'imdb:admin_artist_movie_form' %}"><button type="button">Add Movie Cast</button></a><br>
+    <a href="{% url 'imdb:admin_artist_show_form' %}"><button type="button">Add Show Cast</button></a><br>
+    <a href="{% url 'imdb:admin_director_movie_form' %}"><button type="button">Add Director of Movie</button></a><br>
+    <a href="{% url 'imdb:admin_director_show_form' %}"><button type="button">Add Director of Show</button></a><br>
+    <a href="{% url 'imdb:admin_update_artist_death_date_form' %}"><button type="button">Update Death Date of Artist</button></a><br>
+    <a href="{% url 'imdb:admin_update_director_death_date_form' %}"><button type="button">Update Death Date of Director</button></a><br>
+    <a href="{% url 'imdb:admin_update_show_season_form' %}"><button type="button">Update Seasons of Show</button></a><br>
+    <a href="{% url 'imdb:admin_delete_movie' %}"><button type="button">Delete Movie</button></a><br>
+    <a href="{% url 'imdb:admin_delete_show' %}"><button type="button">Delete Show</button></a><br>
+    <a href="{% url 'imdb:admin_delete_artist' %}"><button type="button">Delete Artist</button></a><br>
+    <a href="{% url 'imdb:admin_delete_director' %}"><button type="button">Delete Director</button></a><br>
 </body>
 </html>

@@ -89,7 +89,7 @@ class MOVIE:
         query = """ SELECT "mID" FROM 
                     (SELECT * FROM MOVIE 
                     ORDER BY "mID" DESC) 
-                    WHERE ROWNUM = 1 """
+                    WHERE ROWNUM = 1 """                        #   SUB-QUERY
 
         cur.execute(query)
 
@@ -99,6 +99,37 @@ class MOVIE:
         conn.close()
 
         return mID[0][0]
+
+    @staticmethod
+    def update_rating(mID):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        # query = """ SELECT ROUND(AVG("rating"), 1)
+        #             FROM USER_MOVIE
+        #             GROUP BY "mID"
+        #             HAVING "mID" = (:mID) """
+        #
+        # cur.execute(query, {'mID': mID})
+        #
+        # rating = cur.fetchall()
+        # rating = rating[0][0]
+
+        query = """ UPDATE IMDB.MOVIE
+                    SET "Rating" = (SELECT ROUND(AVG("rating"), 1)                                              
+                     FROM USER_MOVIE
+                     GROUP BY "mID"
+                     HAVING "mID" = (:mID))
+                    WHERE "mID" = (:mID) """                                                        ###SUB-QUERY, AGGREGATE FUNCTION
+
+        dict = {'mID': mID}
+
+        cur.execute(query, dict)
+
+        conn.commit()
+        conn.close()
+
 
     # @staticmethod
     # def get_movie(title):
@@ -117,38 +148,39 @@ class MOVIE:
     #     conn.close()
     #     return res
 
-class ARTIST:
-
     @staticmethod
-    def insert(dict):
+    def get_reviews(mID):
         dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
         conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
         cur = conn.cursor()
 
-        query = "INSERT INTO IMDB.ARTIST values(seq_artist.nextval, :name, :gender, :birth_date, :nationality, :birth_place, :death_date, :photo)"
+        query = """ SELECT U."User_Name", UM."review" FROM USERS U, USER_MOVIE UM
+            WHERE UM."mID" = (:mID) 
+            AND U."usID" = UM."usID"
+            AND UM."review" IS NOT NULL """                                                            ###JOIN
 
-        cur.execute(query, dict)
-        conn.commit()
+        cur.execute(query, {'mID': mID})
+
+        res = cur.fetchall()
+
         conn.close()
 
+        return res
+
     @staticmethod
-    def get_artist_id(artist_name):
+    def delete(mID):
         dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
         conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
         cur = conn.cursor()
 
-        query = """SELECT "aID" FROM IMDB.ARTIST WHERE UPPER("Name") LIKE UPPER(:name)"""
+        query = """ DELETE FROM IMDB.MOVIE
+                    WHERE "mID" = (:mID)    """
 
-        dict = {'name': artist_name}
-
-        cur.execute(query, dict)
-
-        aID = cur.fetchall()
-
+        cur.execute(query, {'mID': mID})
         conn.commit()
+
         conn.close()
 
-        return aID[0][0]
 
 
 class SHOW:
@@ -175,7 +207,8 @@ class SHOW:
         conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
         cur = conn.cursor()
 
-        query = "INSERT INTO IMDB.SHOW values(:sid, :title, :seasons, :episodes, :release_date, :ending_date, :rating, :episode_duration, :language, :photo, :description)"
+        query = "INSERT INTO IMDB.SHOW values(:sid, :title, :seasons, :episodes, :release_date, " \
+                ":ending_date, :rating, :episode_duration, :language, :photo, :description)"
 
         cur.execute(query, dict)
         conn.commit()
@@ -200,6 +233,152 @@ class SHOW:
 
         return sID[0][0]
 
+    @staticmethod
+    def update_season(sID, season, episodes, ending_date):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ UPDATE IMDB.SHOW
+                    SET "Season" = (:season), "Episodes" = (:episodes), "Ending_Date" = (:ending_date)
+                    WHERE "sID" = (:sID)"""
+
+        dict = {'season': season, 'episodes': episodes, 'ending_date': ending_date, 'sID': sID}
+        cur.execute(query, dict)
+
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def update_rating(sID):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        # query = """ SELECT ROUND(AVG("rating"), 1)
+        #                 FROM USER_SHOW
+        #                 GROUP BY "sID"
+        #                 HAVING "sID"= (:sID) """
+        #
+        # cur.execute(query, {'sID': sID})
+        #
+        # rating = cur.fetchall()
+        # rating = rating[0][0]
+
+        query = """ UPDATE IMDB.SHOW
+                    SET "Rating" = (SELECT ROUND(AVG("rating"), 1)                                             
+                    FROM USER_SHOW
+                    GROUP BY "sID"
+                    HAVING "sID"= (:sID))
+                    WHERE "sID" = (:sID) """                                              ### SUB-QUERY, AGGREGATE FUNCTION
+
+        dict = {'sID': sID}
+
+        cur.execute(query, dict)
+
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def get_reviews(sID):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ SELECT U."User_Name", US."review" FROM USERS U, USER_SHOW US
+                WHERE US."sID" = (:sID) 
+                AND U."usID" = US."usID"
+                AND US."review" IS NOT NULL """                                        ###JOIN
+
+        cur.execute(query, {'sID': sID})
+
+        res = cur.fetchall()
+
+        conn.close()
+
+        return res
+
+    @staticmethod
+    def delete(sID):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ DELETE FROM IMDB.SHOW
+                        WHERE "sID" = (:sID)    """
+
+        cur.execute(query, {'sID': sID})
+        conn.commit()
+
+        conn.close()
+
+
+
+class ARTIST:
+
+    @staticmethod
+    def insert(dict):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = "INSERT INTO IMDB.ARTIST values(seq_artist.nextval, :name, :gender, :birth_date, :nationality, :birth_place, :death_date, :photo, :bio)"
+
+        cur.execute(query, dict)
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def get_artist_id(artist_name):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """SELECT "aID" FROM IMDB.ARTIST WHERE UPPER("Name") LIKE UPPER(:name)"""
+
+        dict = {'name': artist_name}
+
+        cur.execute(query, dict)
+
+        aID = cur.fetchall()
+
+        conn.commit()
+        conn.close()
+
+        return aID[0][0]
+
+    @staticmethod
+    def update_death_date(aID, death_date):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ UPDATE IMDB.ARTIST
+                    SET "Death_Date" = (:death_date)
+                    WHERE "aID" = (:aID) """
+
+        dict = {'death_date': death_date, 'aID': aID}
+
+        cur.execute(query, dict)
+
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def delete(aID):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ DELETE FROM IMDB.ARTIST
+                            WHERE "aID" = (:aID)    """
+
+        cur.execute(query, {'aID': aID})
+        conn.commit()
+
+        conn.close()
+
+
 
 class DIRECTOR:
 
@@ -210,13 +389,30 @@ class DIRECTOR:
         cur = conn.cursor()
 
         query = """SELECT "dID" FROM IMDB.DIRECTOR WHERE UPPER("Name") LIKE UPPER(:director)"""
-        cur.execute(query, {'director':director})
+        cur.execute(query, {'director': director})
 
         dID = cur.fetchall()
 
         conn.close()
 
         return dID[0][0]
+
+    @staticmethod
+    def update_death_date(dID, death_date):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ UPDATE IMDB.DIRECTOR
+                        SET "Death_Date" = (:death_date)
+                        WHERE "dID" = (:dID) """
+
+        dict = {'death_date': death_date, 'dID': dID}
+
+        cur.execute(query, dict)
+
+        conn.commit()
+        conn.close()
 
 
     @staticmethod
@@ -225,11 +421,27 @@ class DIRECTOR:
         conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
         cur = conn.cursor()
 
-        query = "INSERT INTO IMDB.DIRECTOR values(seq_director.nextval, :name, :gender, :birth_date, :nationality, :birth_place, :death_date, :photo)"
+        query = "INSERT INTO IMDB.DIRECTOR values(seq_director.nextval, :name, :gender, " \
+                ":birth_date, :nationality, :birth_place, :death_date, :photo, :bio)"
 
         cur.execute(query, dict)
         conn.commit()
         conn.close()
+
+    @staticmethod
+    def delete(dID):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ DELETE FROM IMDB.DIRECTOR
+                            WHERE "dID" = (:dID)    """
+
+        cur.execute(query, {'dID': dID})
+        conn.commit()
+
+        conn.close()
+
 
 
 class ARTIST_MOVIE:
@@ -325,7 +537,7 @@ class MOVIE_GENRE:
         conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
         cur = conn.cursor()
 
-        query = """INSERT INTO IMDB.MOVIE_GENRE values(:mID, :gID)"""
+        query = """ INSERT INTO IMDB.MOVIE_GENRE values(:mID, :gID) """
 
         cur.execute(query, {'mID':mID, 'gID':gID})
         conn.commit()
@@ -377,7 +589,230 @@ class DIRECTOR_SHOW:
         conn.close()
 
 
-#functions
+class USERS:
+    @staticmethod
+    def insert(dict):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ INSERT INTO IMDB.USERS values(seq_users.nextval, :username, :password) """
+
+        cur.execute(query, dict)
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def get_user_id(username):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ SELECT "usID" FROM IMDB.USERS WHERE "User_Name" LIKE (:name) """
+
+        dict = {'name': username}
+
+        cur.execute(query, dict)
+
+        usID = cur.fetchall()
+        conn.close()
+
+        return usID[0][0]
+
+
+class USER_MOVIE:
+
+    @staticmethod
+    def record_exists(dict):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        usID = dict["usID"]
+        mID = dict["mID"]
+
+        returnVal = cur.var(int)
+
+        cur.callproc("IMDB.USER_MOVIE_EXISTS", [usID, mID, returnVal])  ###PL/SQL PROCEDURE
+
+        conn.close()
+
+        return returnVal.getvalue()
+
+    @staticmethod
+    def insert_rating(dict):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ INSERT INTO IMDB.USER_MOVIE values(:rating, :usID, :mID, NULL, SYSDATE, NULL) """
+
+        cur.execute(query, dict)
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def update_rating(dict):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ UPDATE IMDB.USER_MOVIE
+                            SET "rating" = (:rating),
+                                "rating_log" = SYSDATE
+                            WHERE "usID" = (:usID) AND "mID" = (:mID) """
+
+        cur.execute(query, dict)
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def insert_review(dict):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ INSERT INTO IMDB.USER_MOVIE values(NULL, :usID, :mID, :review, NULL, SYSDATE) """
+
+        cur.execute(query, dict)
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def update_review(dict):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ UPDATE IMDB.USER_MOVIE
+                                    SET "review" = (:review),
+                                        "review_log" = SYSDATE
+                                    WHERE "usID" = (:usID) AND "mID" = (:mID) """
+
+        cur.execute(query, dict)
+        conn.commit()
+        conn.close()
+
+
+class USER_SHOW:
+
+    @staticmethod
+    def record_exists(dict):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        usID = dict["usID"]
+        sID = dict["sID"]
+
+        returnVal = cur.var(int)
+
+        cur.callproc("IMDB.USER_SHOW_EXISTS", [usID, sID, returnVal])  ###PL/SQL PROCEDURE
+
+        conn.close()
+
+        return returnVal.getvalue()
+
+    @staticmethod
+    def insert_rating(dict):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ INSERT INTO IMDB.USER_SHOW values(:rating, :usID, :sID, NULL, SYSDATE, NULL) """
+
+        cur.execute(query, dict)
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def update_rating(dict):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ UPDATE IMDB.USER_SHOW
+                            SET "rating" = (:rating),
+                                "rating_log" = SYSDATE
+                            WHERE "usID" = (:usID) AND "sID" = (:sID) """
+
+        cur.execute(query, dict)
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def insert_review(dict):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ INSERT INTO IMDB.USER_SHOW values(NULL, :usID, :sID, :review, NULL, SYSDATE) """
+
+        cur.execute(query, dict)
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def update_review(dict):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ UPDATE IMDB.USER_SHOW
+                                SET "review" = (:review),
+                                    "review_log" = SYSDATE
+                                WHERE "usID" = (:usID) AND "sID" = (:sID) """
+
+        cur.execute(query, dict)
+        conn.commit()
+        conn.close()
+
+
+class LOG_TABLE_USER:
+    @staticmethod
+    def insert(usID):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ INSERT INTO IMDB.LOG_TABLE_USER values(:usID, NULL, NULL) """
+
+        cur.execute(query, {'usID': usID})
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def update_login(usID):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ UPDATE IMDB.LOG_TABLE_USER
+                            SET "LogIn" = SYSDATE
+                            WHERE "usID" = (:usID) """
+
+        cur.execute(query, {'usID': usID})
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def update_logOut(usID):
+        dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
+        conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
+        cur = conn.cursor()
+
+        query = """ UPDATE IMDB.LOG_TABLE_USER
+                                SET "LogOut" = SYSDATE
+                                WHERE "usID" = (:usID) """
+
+        cur.execute(query, {'usID': usID})
+        conn.commit()
+        conn.close()
+
+
+
+####    global_functions
+
 def movie_or_show(title):
 
     movie = False
@@ -387,28 +822,39 @@ def movie_or_show(title):
     conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
     cur = conn.cursor()
 
-    query = """SELECT "mID" FROM IMDB.MOVIE WHERE UPPER("Title") LIKE UPPER(:title)"""
+    # query = """ SELECT "mID" FROM IMDB.MOVIE WHERE UPPER("Title") LIKE UPPER(:title) """
+    #
+    # dict = {'title': title}
+    #
+    # cur.execute(query, dict)
+    #
+    # mID = cur.fetchall()
+    #
+    # if len(mID) != 0:
+    #     movie = True
+    #
+    # else:
+    #     query = """SELECT "sID" FROM IMDB.SHOW WHERE UPPER("Title") LIKE UPPER(:title)"""
+    #
+    #     dict = {'title': title}
+    #
+    #     cur.execute(query, dict)
+    #
+    #     sID = cur.fetchall()
+    #
+    #     if len(sID) != 0:
+    #         show = True
 
-    dict = {'title': title}
+    flag = cur.callfunc("IMDB.MOVIE_OR_SHOW", int, [title])                 ###PL/SQL FUNCTION
 
-    cur.execute(query, dict)
+    conn.close()
 
-    mID = cur.fetchall()
-
-    if len(mID) != 0:
+    if flag == 1:
         movie = True
-
+    elif flag == 0:
+        show = True
     else:
-        query = """SELECT "sID" FROM IMDB.SHOW WHERE UPPER("Title") LIKE UPPER(:title)"""
-
-        dict = {'title': title}
-
-        cur.execute(query, dict)
-
-        sID = cur.fetchall()
-
-        if len(sID) != 0:
-            show = True
+        pass
 
     return movie, show
 
@@ -422,28 +868,39 @@ def artist_or_director(name):
     conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
     cur = conn.cursor()
 
-    query = """SELECT "aID" FROM IMDB.Artist WHERE UPPER("Name") LIKE UPPER(:name)"""
+    # query = """SELECT "aID" FROM IMDB.Artist WHERE UPPER("Name") LIKE UPPER(:name)"""
+    #
+    # dict = {'name': name}
+    #
+    # cur.execute(query, dict)
+    #
+    # aID = cur.fetchall()
+    #
+    # if len(aID) != 0:
+    #     artist = True
+    #
+    # else:
+    #     query = """SELECT "dID" FROM IMDB.DIRECTOR WHERE UPPER("Name") LIKE UPPER(:name)"""
+    #
+    #     dict = {'name': name}
+    #
+    #     cur.execute(query, dict)
+    #
+    #     dID = cur.fetchall()
+    #
+    #     if len(dID) != 0:
+    #         director = True
 
-    dict = {'name': name}
+    flag = cur.callfunc("IMDB.ARTIST_OR_DIRECTOR", int, [name])                     ###PL/SQL FUNCTION
 
-    cur.execute(query, dict)
+    conn.close()
 
-    aID = cur.fetchall()
-
-    if len(aID) != 0:
+    if flag == 1:
         artist = True
-
+    elif flag == 0:
+        director = True
     else:
-        query = """SELECT "dID" FROM IMDB.DIRECTOR WHERE UPPER("Name") LIKE UPPER(:name)"""
-
-        dict = {'name': name}
-
-        cur.execute(query, dict)
-
-        dID = cur.fetchall()
-
-        if len(dID) != 0:
-            director = True
+        pass
 
     return artist, director
 
@@ -464,7 +921,7 @@ def get_works(artist_name):
                 FROM SHOW S, ARTIST A, ARTIST_SHOW ASW
                 WHERE UPPER(A."Name") LIKE UPPER(:artist_name)
                 AND A."aID" = ASW."aID"
-                AND S."sID" = ASW."sID" """
+                AND S."sID" = ASW."sID" """                                     ### JOIN STATEMENT
 
     cur.execute(query, {'artist_name': artist_name})
 
@@ -487,7 +944,7 @@ def get_directions(director_name):
                 FROM MOVIE M, DIRECTOR D, DIRECTOR_MOVIE DM
                 WHERE UPPER(D."Name") LIKE UPPER(:director_name)
                 AND D."dID" = DM."dID"
-                AND M."mID" = DM."mID" """
+                AND M."mID" = DM."mID" """                                          ### JOIN STATEMENT
 
     cur.execute(query, {':director_name': director_name})
 
@@ -505,16 +962,18 @@ def movie_exists(mID):
     conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
     cur = conn.cursor()
 
-    query = """ SELECT "mID" FROM 
-                    IMDB.MOVIE WHERE "mID" = (:mID) """
+    # query = """ SELECT "mID" FROM
+    #                 IMDB.MOVIE WHERE "mID" = (:mID) """
+    #
+    # cur.execute(query, {'mID': mID})
+    #
+    # mID = cur.fetchall()
 
-    cur.execute(query, {'mID': mID})
-
-    mID = cur.fetchall()
+    returnVal = cur.callfunc("IMDB.MOVIE_EXISTS", int, [mID])                    ###PL/SQL FUNCTION
 
     conn.close()
 
-    if len(mID) == 0:
+    if returnVal == 0:
         return False
 
     else:
