@@ -1,0 +1,167 @@
+CREATE OR REPLACE FUNCTION "ARTIST_OR_DIRECTOR"(NAAM IN VARCHAR2)
+RETURN NUMBER IS
+
+	CHOICE NUMBER;
+	ACOUNT NUMBER;
+	DCOUNT NUMBER;
+	
+BEGIN
+	-- routine body goes here, e.g.
+	-- DBMS_OUTPUT.PUT_LINE('Navicat for Oracle');
+	SELECT COUNT("aID") INTO ACOUNT
+	FROM ARTIST
+	WHERE UPPER("Name") LIKE UPPER(NAAM);
+	
+	SELECT COUNT("dID") INTO DCOUNT
+	FROM DIRECTOR
+	WHERE UPPER("Name") LIKE UPPER(NAAM);
+	
+	IF ACOUNT >= 1 THEN
+			CHOICE := 1;
+			
+	ELSIF DCOUNT >= 1 THEN
+			CHOICE := 0;
+			
+	ELSE 
+			CHOICE := -1;
+			
+	END IF;
+		
+	RETURN CHOICE;
+END;
+
+--------------
+
+CREATE OR REPLACE FUNCTION "MOVIE_EXISTS"(movie_ID IN NUMBER)
+RETURN NUMBER IS
+	
+	CHOICE NUMBER;
+	M_EXISTS NUMBER;
+	
+BEGIN
+	-- routine body goes here, e.g.
+	-- DBMS_OUTPUT.PUT_LINE('Navicat for Oracle');
+	SELECT COUNT("mID") INTO M_EXISTS
+	FROM MOVIE
+	WHERE "mID" = movie_ID;
+	
+	IF M_EXISTS >= 1 THEN
+			CHOICE := 1;
+			
+	ELSE 
+			CHOICE := 0;
+			
+	END IF;
+		
+	RETURN CHOICE;
+END;
+
+-----------------
+
+CREATE OR REPLACE FUNCTION "MOVIE_OR_SHOW"(TIT IN VARCHAR2)
+RETURN NUMBER IS
+
+	CHOICE NUMBER;
+	MCOUNT NUMBER;
+	SCOUNT NUMBER;
+	
+BEGIN
+	-- routine body goes here, e.g.
+	-- DBMS_OUTPUT.PUT_LINE('Navicat for Oracle');
+	SELECT COUNT("mID") INTO MCOUNT
+	FROM MOVIE
+	WHERE UPPER("Title") LIKE UPPER(TIT);
+	
+	SELECT COUNT("sID") INTO SCOUNT
+	FROM SHOW
+	WHERE UPPER("Title") LIKE UPPER(TIT);
+	
+	IF MCOUNT >= 1 THEN
+			CHOICE := 1;
+			
+	ELSIF SCOUNT >= 1 THEN
+			CHOICE := 0;
+			
+	ELSE 
+			CHOICE := -1;
+			
+	END IF;
+		
+	RETURN CHOICE;
+END;
+
+--------------
+
+CREATE OR REPLACE FUNCTION "SHOW_EXISTS"(show_ID IN NUMBER)
+RETURN NUMBER IS
+	
+	CHOICE NUMBER;
+	S_EXISTS NUMBER;
+	
+BEGIN
+	-- routine body goes here, e.g.
+	-- DBMS_OUTPUT.PUT_LINE('Navicat for Oracle');
+	SELECT COUNT("sID") INTO S_EXISTS
+	FROM SHOW
+	WHERE "sID" = show_ID;
+	
+	IF S_EXISTS >= 1 THEN
+			CHOICE := 1;
+			
+	ELSE 
+			CHOICE := 0;
+			
+	END IF;
+		
+	RETURN CHOICE;
+END;
+
+------------------------
+
+CREATE OR REPLACE PROCEDURE"USER_MOVIE_EXISTS"(userID IN NUMBER, movie_ID IN NUMBER, CHOICE OUT NUMBER)
+IS
+	
+	EXIST NUMBER;
+	
+BEGIN
+	-- routine body goes here, e.g.
+	-- DBMS_OUTPUT.PUT_LINE('Navicat for Oracle');
+	SELECT COUNT(*) INTO EXIST
+	FROM USER_MOVIE
+	WHERE "usID" = userID AND "mID" = movie_ID;
+	
+	IF EXIST >= 1 THEN
+			CHOICE := 1;
+			
+	ELSE 
+			CHOICE := 0;
+			
+	END IF;
+	
+END;
+
+----------------------
+
+CREATE OR REPLACE PROCEDURE"USER_SHOW_EXISTS"(userID IN NUMBER, show_ID IN NUMBER, CHOICE OUT NUMBER)
+IS
+	
+	EXIST NUMBER;
+	
+BEGIN
+	-- routine body goes here, e.g.
+	-- DBMS_OUTPUT.PUT_LINE('Navicat for Oracle');
+	SELECT COUNT(*) INTO EXIST
+	FROM USER_SHOW
+	WHERE "usID" = userID AND "sID" = show_ID;
+	
+	IF EXIST >= 1 THEN
+			CHOICE := 1;
+			
+	ELSE 
+			CHOICE := 0;
+			
+	END IF;
+	
+END;
+
+-------------
