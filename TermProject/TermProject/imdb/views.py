@@ -30,9 +30,9 @@ def create_account(request):
                 imdb_user = USERS()
                 imdb_user.insert(dict)
 
-                usID = imdb_user.get_user_id(username)
-                log = LOG_TABLE_USER()
-                log.insert(usID)
+                #usID = imdb_user.get_user_id(username)
+                #log = LOG_TABLE_USER()
+                #log.insert(usID)
 
                 user = User.objects.create_user(username=username, password=password1)          ### FOR DJANGO
                 user.save()
