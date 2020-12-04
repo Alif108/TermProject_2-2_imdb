@@ -1,0 +1,19 @@
+*** 5 PL/SQL
+*** Function, Trigger, Procedure - Minimum 1
+*** Advanced sql
+
+
+IN OUR PROJECT
+--------------------
+
+* JOIN			-	9
+* UNION			-	4
+* SUB_QUERY		-	4
+* AGGREGATE FUNCTIONS	-	2
+* PL/SQL FUNCTIONS	-	4
+* PL/SQL PROCEDURES	-	2
+* TRIGGER		-	5
+
+* DML - Insert, Update, Delete
+* DDL -Create Table, Sequence
+
