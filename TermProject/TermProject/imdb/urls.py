@@ -6,11 +6,13 @@ app_name = 'imdb'
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('movie/<str:movie>', views.movie, name='movie'),
+    # path('movie/<str:movie>', views.movie, name='movie'),
+    path('movie/<int:choice>/<int:id>', views.movie, name = 'movie'),
     path('rate/<int:choice>/<int:id>', views.rate, name='rate'),
     path('review/<int:choice>/<int:id>', views.review, name='review'),
-    path('artist/<str:actor>', views.artist, name='artist'),
-    path('artist/<str:director>', views.artist, name='director'),
+    # path('artist/<str:actor>', views.artist, name='artist'),
+    # path('artist/<str:director>', views.artist, name='director'),
+    path('artist/<int:choice>/<int:id>', views.artist, name='artist'),
     path('login/', views.login, name='login'),
     path('logout/', views.logout, name='logout'),
     path('create_account/', views.create_account, name="create_account"),

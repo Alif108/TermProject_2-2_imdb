@@ -6,8 +6,8 @@
 </head>
 <body style="background-color: black">
     <ul>
-    {% for movie in movie_list %}
-        <a href="{% url 'imdb:movie' movie %}"><li>{{ movie }}</li></a>
+    {% for movie, id , choice in movie_list %}
+        <a href="{% url 'imdb:movie' choice id %}"><li>{{ movie }}</li></a>
     {% endfor %}
     </ul>
 </body>

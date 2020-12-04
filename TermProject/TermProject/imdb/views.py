@@ -218,27 +218,32 @@ def index(request):
     encoded = base64.b64encode(image.read())
     encoded = encoded.decode('utf-8')
 
-    dict = {'movie': title, 'encoded': encoded, 'desc': desc}
+    dict = {'id': mID, 'choice': 1, 'movie': title, 'encoded': encoded, 'desc': desc}
 
     conn.close()
     return render(request, "imdb/index.html", dict)
 
 
 
-def movie(request, movie):
-    m, s = movie_or_show(movie)
+def movie(request, choice, id):
+    #m, s = movie_or_show(movie)
 
     dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
     conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
     c = conn.cursor()
 
-    if m:
-        query = """ SELECT "mID", "Title", TO_CHAR("Release_Date", 'YYYY'), "Rating", 
-                    "Duration", "Language", "Photo", "Description" 
-                    FROM IMDB.MOVIE 
-                    WHERE UPPER("Title") LIKE UPPER(:title) """
+    if choice == 1:
+        # query = """ SELECT "mID", "Title", TO_CHAR("Release_Date", 'YYYY'), "Rating",
+        #             "Duration", "Language", "Photo", "Description"
+        #             FROM IMDB.MOVIE
+        #             WHERE UPPER("Title") LIKE UPPER(:title) """
 
-        c.execute(query, {'title': movie})
+        query = """ SELECT "mID", "Title", TO_CHAR("Release_Date", 'YYYY'), "Rating", 
+                     "Duration", "Language", "Photo", "Description" 
+                     FROM IMDB.MOVIE 
+                     WHERE "mID" = (:mID) """
+
+        c.execute(query, {'mID': id})
 
         data = c.fetchall()
 
@@ -257,7 +262,7 @@ def movie(request, movie):
         if rating == 0:
             rating = 'Not Rated'
 
-        query = """ SELECT C."role", A."Name" 
+        query = """ SELECT C."role", A."Name", A."aID", 1
                 FROM ARTIST_MOVIE C, ARTIST A
                 WHERE C."mID" = (:mID)
                 AND C."aID" = A."aID" """                               ### JOIN
@@ -266,7 +271,7 @@ def movie(request, movie):
 
         cast = c.fetchall()
 
-        query = """ SELECT D."Name" 
+        query = """ SELECT D."dID", D."Name", 0
                 FROM DIRECTOR D, DIRECTOR_MOVIE DM
                 WHERE DM."mID" = (:mID)
                 AND DM."dID" = D."dID" """                              ### JOIN
@@ -274,10 +279,10 @@ def movie(request, movie):
         c.execute(query, {'mID': mID})
 
         director_list = c.fetchall()
-        directors = []
-
-        for director in director_list:
-            directors.append(director[0])
+        # directors = []
+        #
+        # for director in director_list:
+        #     directors.append(director[0])
 
         query = """ SELECT G."Name"
                 FROM GENRE G, MOVIE_GENRE MG
@@ -297,15 +302,20 @@ def movie(request, movie):
         reviews = movie_obj.get_reviews(mID)
 
         dict = {'id': mID, 'title': title, 'release_date': date, 'duration': duration, 'rating': rating, 'language': language,
-                'desc': desc, 'photo': encoded, 'cast': cast, 'directors': director, 'choice': 1, 'genres': genres, 'reviews': reviews}
+                'desc': desc, 'photo': encoded, 'cast': cast, 'directors': director_list, 'choice': 1, 'genres': genres, 'reviews': reviews}
 
-    elif s:
+    elif choice == 0:
+        # query = """     SELECT "sID", "Title", "Season", "Episodes", TO_CHAR("Release_Date", 'YYYY'),
+        #                 TO_CHAR("Ending_Date", 'YYYY'), "Rating", "Episode Duration", "Language", "Photo", "Description"
+        #                 FROM IMDB.SHOW
+        #                 WHERE UPPER("Title") LIKE UPPER(:title) """
+
         query = """     SELECT "sID", "Title", "Season", "Episodes", TO_CHAR("Release_Date", 'YYYY'), 
                         TO_CHAR("Ending_Date", 'YYYY'), "Rating", "Episode Duration", "Language", "Photo", "Description"
                         FROM IMDB.SHOW
-                        WHERE UPPER("Title") LIKE UPPER(:title) """
+                        WHERE "sID" = (:sID) """
 
-        c.execute(query, {'title': movie})
+        c.execute(query, {'sID': id})
 
         data = c.fetchall()
 
@@ -327,7 +337,7 @@ def movie(request, movie):
         if rating == 0:
             rating = 'Not Rated'
 
-        query = """ SELECT C."role", A."Name" 
+        query = """ SELECT C."role", A."Name", A."aID", 1
                         FROM ARTIST_SHOW C, ARTIST A
                         WHERE C."sID" = (:sID)
                         AND C."aID" = A."aID" """                               ### JOIN
@@ -336,7 +346,7 @@ def movie(request, movie):
 
         cast = c.fetchall()
 
-        query = """ SELECT D."Name" 
+        query = """ SELECT  D."dID", D."Name", 0 
                         FROM DIRECTOR D, DIRECTOR_SHOW DS
                         WHERE DS."sID" = (:sID)
                         AND DS."dID" = D."dID" """                              ### JOIN
@@ -344,10 +354,12 @@ def movie(request, movie):
         c.execute(query, {'sID': sID})
 
         director_list = c.fetchall()
-        directors = []
+        # director_list = zip(director_list)
 
-        for director in director_list:
-            directors.append(director[0])
+        # directors = []
+        #
+        # for director in director_list:
+        #     directors.append([director[0], director[1], director[2]])
 
         query = """ SELECT G."Name"
                     FROM GENRE G, SHOW_GENRE SG
@@ -368,35 +380,37 @@ def movie(request, movie):
 
         dict = {'id': sID, 'title': title, 'season': season, 'episodes': episodes, 'release_date': release_date,
                 'ending_date': ending_date, 'rating': rating, 'duration': duration, 'language': language, 'photo': encoded, 'desc': desc,
-                'cast': cast, 'directors': directors, 'choice': 0, 'genres': genres, 'reviews': reviews}
+                'cast': cast, 'directors': director_list, 'choice': 0, 'genres': genres, 'reviews': reviews}
 
     conn.close()
     return render(request, "imdb/movies.html", dict)
 
 
-def artist(request, actor):
+def artist(request, choice, id):
 
-    a, d = artist_or_director(actor)
-
+    #a, d = artist_or_director(actor)
     dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
     conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
     c = conn.cursor()
 
-    if a:
+    if choice == 1:
+        # query = """ SELECT *
+        #         FROM IMDB.ARTIST
+        #         WHERE UPPER("Name") LIKE UPPER(:name) """
         query = """ SELECT * 
-                FROM IMDB.ARTIST 
-                WHERE UPPER("Name") LIKE UPPER(:name) """
+                    FROM IMDB.ARTIST 
+                    WHERE "aID" = (:id) """
 
         persona = 'Actor'
 
-    elif d:
+    elif choice == 0:
         query = """ SELECT * 
                     FROM IMDB.DIRECTOR 
-                    WHERE UPPER("Name") LIKE UPPER(:name) """
+                    WHERE "dID" = (:id) """
 
         persona = 'Director'
 
-    c.execute(query, {'name': actor})
+    c.execute(query, {'id': id})
 
     data = c.fetchall()
 
@@ -413,13 +427,13 @@ def artist(request, actor):
     encoded = base64.b64encode(photo)
     encoded = encoded.decode('utf-8')
 
-    if a:
-        filmography = get_works(name)
-    elif d:
-        filmography = get_directions(name)
+    if choice == 1:
+        filmography = get_works(id)
+    elif choice == 0:
+        filmography = get_directions(id)
 
-    dict = {'name':name, 'gender':gender, 'birth_date':birth_date, 'nationality':nationality,
-            'birth_place':birth_place, 'death_date': death_date, 'photo':encoded, 'persona': persona, 'filmography': filmography, 'bio':bio}
+    dict = {'name': name, 'gender': gender, 'birth_date': birth_date, 'nationality':nationality,
+            'birth_place': birth_place, 'death_date': death_date, 'photo': encoded, 'persona': persona, 'filmography': filmography, 'bio':bio}
 
     conn.close()
     return render(request, "imdb/artist.html", dict)
@@ -434,9 +448,9 @@ def search(request):
         conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
         cur = conn.cursor()
 
-        query = """ SELECT "Title", "Photo" FROM IMDB.MOVIE WHERE UPPER("Title") LIKE UPPER(CONCAT(CONCAT('%',:name), '%'))
+        query = """ SELECT "mID", "Title", "Photo", 1 FROM IMDB.MOVIE WHERE UPPER("Title") LIKE UPPER(CONCAT(CONCAT('%',:name), '%'))
                     UNION ALL
-                    SELECT "Title", "Photo" FROM IMDB.SHOW WHERE UPPER("Title") LIKE UPPER(CONCAT(CONCAT('%',:name), '%')) """       #UNION
+                    SELECT "sID", "Title", "Photo", 0 FROM IMDB.SHOW WHERE UPPER("Title") LIKE UPPER(CONCAT(CONCAT('%',:name), '%')) """       #UNION
 
         cur.execute(query, {'name': name})
 
@@ -446,17 +460,19 @@ def search(request):
 
         for movie in movie_list:
             # movies.append(movie[0])
-            title = movie[0]
-            photo = movie[1].read()
+            id = movie[0]
+            title = movie[1]
+            photo = movie[2].read()
+            choice = movie[3]
 
             encoded = base64.b64encode(photo)
             encoded = encoded.decode('utf-8')
 
-            movies.append([title, encoded])
+            movies.append([id, title, encoded, choice])
 
-        query = """ SELECT "Name", "Photo" FROM IMDB.ARTIST WHERE UPPER("Name") LIKE UPPER(CONCAT(CONCAT('%',:name), '%'))
+        query = """ SELECT "aID", "Name", "Photo", 1 FROM IMDB.ARTIST WHERE UPPER("Name") LIKE UPPER(CONCAT(CONCAT('%',:name), '%'))
                     UNION ALL
-                    SELECT "Name", "Photo" FROM IMDB.DIRECTOR WHERE UPPER("Name") LIKE UPPER(CONCAT(CONCAT('%',:name), '%')) """     ###UNION
+                    SELECT "dID", "Name", "Photo", 0 FROM IMDB.DIRECTOR WHERE UPPER("Name") LIKE UPPER(CONCAT(CONCAT('%',:name), '%')) """     ###UNION
 
         cur.execute(query, {'name': name})
 
@@ -466,13 +482,15 @@ def search(request):
 
         for person in persons_list:
             # persons.append(person[0])
-            naam = person[0]
-            photo = person[1].read()
+            id = person[0]
+            naam = person[1]
+            photo = person[2].read()
+            choice = person[3]
 
             encoded = base64.b64encode(photo)
             encoded = encoded.decode('utf-8')
 
-            persons.append([naam, encoded])
+            persons.append([id, naam, encoded, choice])
 
         dict = {'movies': movies, 'persons': persons}
 
@@ -500,15 +518,15 @@ def movies_of_genre(request, genre):
     conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
     c = conn.cursor()
 
-    movie_list = []
+    # movie_list = []
 
-    query = """ SELECT M."Title"
+    query = """ SELECT M."Title", M."mID", 1
                 FROM MOVIE M, GENRE G, MOVIE_GENRE MG
                 WHERE UPPER(G."Name") LIKE UPPER(:genre)
                 AND G."gID" = MG."gID"
                 AND M."mID" = MG."mID" 
                 UNION
-                SELECT S."Title"
+                SELECT S."Title", S."sID", 0
                 FROM SHOW S, GENRE G, SHOW_GENRE SG
                 WHERE UPPER(G."Name") LIKE UPPER(:genre)
                 AND G."gID" = SG."gID"
@@ -518,10 +536,10 @@ def movies_of_genre(request, genre):
 
     movies = c.fetchall()
 
-    for movie in movies:
-        movie_list.append(movie[0])
+    # for movie in movies:
+    #     movie_list.append(movie[0])
 
-    dict = {'movie_list': movie_list}
+    dict = {'movie_list': movies}
 
     return render(request, "imdb/movies_of_this_list.html", dict)
 
@@ -540,22 +558,24 @@ def search_by_year(request):
 
             movie_list = []
 
-            query = """ SELECT "Title" FROM IMDB.MOVIE
+            query = """ SELECT "Title", "mID", 1 
+                        FROM IMDB.MOVIE
                         WHERE TO_NUMBER(TO_CHAR("Release_Date", 'YYYY')) BETWEEN (:start_year) AND (:end_year)
                         UNION
-                        SELECT "Title" FROM IMDB.SHOW
+                        SELECT "Title", "sID", 0 
+                        FROM IMDB.SHOW
                         WHERE TO_NUMBER(TO_CHAR("Release_Date", 'YYYY')) BETWEEN (:start_year) AND (:end_year)"""  ### UNION
 
             c.execute(query, {'start_year': start_year, 'end_year': end_year})
 
             movies = c.fetchall()
 
-            for movie in movies:
-                movie_list.append(movie[0])
+            # for movie in movies:
+            #     movie_list.append(movie[0])
 
-            dict = {'movie_list': movie_list}
+            dict = {'movie_list': movies}
 
-            if len(movie_list) == 0:
+            if len(movies) == 0:
                 messages.info(request, 'No Movie Or Show Found')
                 return redirect('/search_by_year')
 
@@ -573,11 +593,12 @@ def top_rated_movies(request):
 
     #movie_list = []
 
-    query = """ SELECT "Title", "Rating" FROM 
-                (SELECT "Title", "Rating" FROM MOVIE
+    query = """ SELECT "Title", "Rating", "ID", "CHOICE"
+                FROM 
+                (SELECT "Title", "Rating", "mID" AS "ID", 1 AS "CHOICE" FROM MOVIE
                 UNION
-                SELECT "Title", "Rating" FROM SHOW)
-                ORDER BY "Rating" DESC """                              ### SUB-QUERY
+                SELECT "Title", "Rating", "sID" AS "ID", 0 AS "CHOICE" FROM SHOW)
+                ORDER BY "Rating" DESC """                              ### SUB-QUERY, UNION
 
     c.execute(query)
 

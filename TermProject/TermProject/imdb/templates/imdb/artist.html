@@ -69,14 +69,14 @@
     <div>
         <p style="color: #dad8e6" id="Cast"><strong>FILMOGRAPHY</strong></p>
         <ul  id="Filmography">
-            {% if persona == 'Actor'%}
-                {% for movie, role in filmography %}
-                <p style="color: #dad8e6"><a href="{% url 'imdb:movie' movie %}">{{ movie }}</a>  ||    {{ role }}</p>
+            {% if persona == 'Actor' %}
+                {% for id, movie, role, choice in filmography %}
+                <p style="color: #dad8e6"><a href="{% url 'imdb:movie' choice id %}">{{ movie }}</a>  ||    {{ role }}</p>
                 <br>
                 {% endfor %}
             {% elif persona == 'Director' %}
-                {% for movie in filmography %}
-            <p style="color: #dad8e6"><a href="{% url 'imdb:movie' movie %}">{{ movie }}</a></p>
+                {% for id, movie, choice in filmography %}
+            <p style="color: #dad8e6"><a href="{% url 'imdb:movie' choice id %}">{{ movie }}</a></p>
                 <br>
                 {% endfor %}
             {% endif %}

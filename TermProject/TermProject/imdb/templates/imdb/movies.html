@@ -81,16 +81,16 @@
     <div>
         <p style="color: #dad8e6" id="Description">{{desc}}</p>
         <p style="color: #dad8e6" id="Director"><strong><u>DIRECTOR</u></strong>:<br>
-            {% for director in directors %}
-            <a href="{% url 'imdb:director' director %}">{{ director }}</a><br>
+            {% for id, director, choice in directors %}
+            <a href="{% url 'imdb:artist' choice id %}">{{ director }}</a><br>
             {% endfor %}
         </p>
     </div>
     <div>
         <p style="color: #dad8e6" id="Cast"><strong><u>CAST</u></strong></p>
         <ul id="Cast-List">
-            {% for role, actor in cast %}
-            <p style="color: #dad8e6"><a href="{% url 'imdb:artist' actor %}">{{ actor }}</a>   ||   {{ role }}</p>
+            {% for role, actor, id , choice in cast %}
+            <p style="color: #dad8e6"><a href="{% url 'imdb:artist' choice id %}">{{ actor }}</a>   ||   {{ role }}</p>
             <br>
             {% endfor %}
         </ul>

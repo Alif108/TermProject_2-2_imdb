@@ -8,12 +8,12 @@
 </head>
 <body style="background-color: black">
 <table border="1">
-    {% for movie, photo in movies %}
-    <tr><td><img id="Movie poster" width="150" height="200" src = "data:image/png;base64,{{ photo }}"></td><td><a href="{% url 'imdb:movie' movie %}">{{ movie }}</a></td></tr>
+    {% for id, movie, photo, choice in movies %}
+    <tr><td><img id="Movie poster" width="150" height="200" src = "data:image/png;base64,{{ photo }}"></td><td><a href="{% url 'imdb:movie' choice id %}">{{ movie }}</a></td></tr>
     {% endfor %}
 
-    {% for actor, photo in persons %}
-    <tr><td><img id="Artist poster" width="150" height="200" src = "data:image/png;base64,{{ photo }}"></td><td><a href="{% url 'imdb:artist' actor %}">{{ actor }}</a></td></tr>
+    {% for id, actor, photo, choice in persons %}
+    <tr><td><img id="Artist poster" width="150" height="200" src = "data:image/png;base64,{{ photo }}"></td><td><a href="{% url 'imdb:artist' choice id %}">{{ actor }}</a></td></tr>
     {% endfor %}
 </table>
 </body>

@@ -36,6 +36,11 @@
             <hr>
             <p id="New_to_imdb">New to IMDb?</p><a href="{% url 'imdb:create_account' %}"><button class="btn btn-primary" id="create_account_button" type="button">Create Account</button></a></form>
     </div>
+    <div>
+            {% for message in messages %}
+            {{ message }}
+            {% endfor %}
+        </div>
     <script src="{% static 'js/jquery.min.js' %}"></script>
     <script src="{% static 'bootstrap/js/bootstrap.min.js' %}"></script>
     <script src="{% static 'js/A-working-Rating-option-for-Contact-Forms.js' %}"></script>

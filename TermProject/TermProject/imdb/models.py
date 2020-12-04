@@ -905,57 +905,65 @@ def artist_or_director(name):
     return artist, director
 
 
-def get_works(artist_name):
+def get_works(id):
 
     dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
     conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
     cur = conn.cursor()
 
-    query = """ SELECT M."Title", AM."role"
+    query = """ SELECT M."mID", M."Title", AM."role", 1
                 FROM MOVIE M, ARTIST A, ARTIST_MOVIE AM
-                WHERE UPPER(A."Name") LIKE UPPER(:artist_name)
+                WHERE A."aID" = (:id)
                 AND A."aID" = AM."aID"
                 AND M."mID" = AM."mID" 
                 UNION
-                SELECT S."Title", ASW."role"
+                SELECT S."sID", S."Title", ASW."role", 0
                 FROM SHOW S, ARTIST A, ARTIST_SHOW ASW
-                WHERE UPPER(A."Name") LIKE UPPER(:artist_name)
+                WHERE A."aID" = (:id)
                 AND A."aID" = ASW."aID"
                 AND S."sID" = ASW."sID" """                                     ### JOIN STATEMENT
 
-    cur.execute(query, {'artist_name': artist_name})
+    cur.execute(query, {'id': id})
 
     works = cur.fetchall()
 
     return works
 
-def get_directions(director_name):
+def get_directions(id):
     dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
     conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
     cur = conn.cursor()
 
-    query = """ SELECT S."Title"
+    query = """ SELECT S."sID",S."Title", 0
                 FROM SHOW S, DIRECTOR D, DIRECTOR_SHOW DS
-                WHERE UPPER(D."Name") LIKE UPPER(:director_name)
+                WHERE D."dID" = (:id)
                 AND D."dID" = DS."dID"
                 AND S."sID" = DS."sID"
                 UNION
-                SELECT M."Title"
+                SELECT M."mID",M."Title", 1
                 FROM MOVIE M, DIRECTOR D, DIRECTOR_MOVIE DM
-                WHERE UPPER(D."Name") LIKE UPPER(:director_name)
+                WHERE D."dID" = (:id)
                 AND D."dID" = DM."dID"
-                AND M."mID" = DM."mID" """                                          ### JOIN STATEMENT
+                AND M."mID" = DM."mID" """                                          ### JOIN STATEMENT, UNION
 
-    cur.execute(query, {':director_name': director_name})
+    cur.execute(query, {'id': id})
 
     movie_list = cur.fetchall()
 
-    movies = []
+    # movies = []
+    #
+    # for i in movie_list:
+    #     id = i[0]
+    #     title = i[1]
+    #     # photo = i[2].read()
+    #     choice = i[2]
+    #
+    #     # encoded = base64.b64encode(photo)
+    #     # encoded = encoded.decode('utf-8')
+    #
+    #     movie_list.append([id, title, choice])
 
-    for movie in movie_list:
-        movies.append(movie[0])
-
-    return movies
+    return movie_list
 
 def movie_exists(mID):
     dsn_tns = cx_Oracle.makedsn('localhost', '1521', service_name='ORCL')
