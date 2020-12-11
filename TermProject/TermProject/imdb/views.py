@@ -8,6 +8,7 @@ import base64
 import random
 from django.contrib.auth.models import User, auth
 from django.contrib import messages
+from django.urls import reverse
 
 # Create your views here.
 
@@ -520,13 +521,13 @@ def movies_of_genre(request, genre):
 
     # movie_list = []
 
-    query = """ SELECT M."Title", M."mID", 1
+    query = """ SELECT M."Title", M."mID", 1, M."Photo"
                 FROM MOVIE M, GENRE G, MOVIE_GENRE MG
                 WHERE UPPER(G."Name") LIKE UPPER(:genre)
                 AND G."gID" = MG."gID"
                 AND M."mID" = MG."mID" 
-                UNION
-                SELECT S."Title", S."sID", 0
+                UNION ALL
+                SELECT S."Title", S."sID", 0, S."Photo"
                 FROM SHOW S, GENRE G, SHOW_GENRE SG
                 WHERE UPPER(G."Name") LIKE UPPER(:genre)
                 AND G."gID" = SG."gID"
@@ -534,10 +535,21 @@ def movies_of_genre(request, genre):
 
     c.execute(query, {'genre': genre})
 
-    movies = c.fetchall()
+    movie_list = c.fetchall()
 
-    # for movie in movies:
-    #     movie_list.append(movie[0])
+    movies = []
+
+    for movie in movie_list:
+        # movies.append(movie[0])
+        title = movie[0]
+        id = movie[1]
+        photo = movie[3].read()
+        choice = movie[2]
+
+        encoded = base64.b64encode(photo)
+        encoded = encoded.decode('utf-8')
+
+        movies.append([title, id, choice, encoded])
 
     dict = {'movie_list': movies}
 
@@ -558,20 +570,31 @@ def search_by_year(request):
 
             movie_list = []
 
-            query = """ SELECT "Title", "mID", 1 
+            query = """ SELECT "Title", "mID", 1, "Photo" 
                         FROM IMDB.MOVIE
                         WHERE TO_NUMBER(TO_CHAR("Release_Date", 'YYYY')) BETWEEN (:start_year) AND (:end_year)
-                        UNION
-                        SELECT "Title", "sID", 0 
+                        UNION ALL
+                        SELECT "Title", "sID", 0, "Photo"
                         FROM IMDB.SHOW
                         WHERE TO_NUMBER(TO_CHAR("Release_Date", 'YYYY')) BETWEEN (:start_year) AND (:end_year)"""  ### UNION
 
             c.execute(query, {'start_year': start_year, 'end_year': end_year})
 
-            movies = c.fetchall()
+            movie_list = c.fetchall()
 
-            # for movie in movies:
-            #     movie_list.append(movie[0])
+            movies = []
+
+            for movie in movie_list:
+                # movies.append(movie[0])
+                title = movie[0]
+                id = movie[1]
+                photo = movie[3].read()
+                choice = movie[2]
+
+                encoded = base64.b64encode(photo)
+                encoded = encoded.decode('utf-8')
+
+                movies.append([title, id, choice, encoded])
 
             dict = {'movie_list': movies}
 
@@ -591,18 +614,31 @@ def top_rated_movies(request):
     conn = cx_Oracle.connect(user='IMDB', password='imdb', dsn=dsn_tns)
     c = conn.cursor()
 
-    #movie_list = []
+    movie_list = []
 
-    query = """ SELECT "Title", "Rating", "ID", "CHOICE"
+    query = """ SELECT "Title", "Rating", "Photo", "ID", "CHOICE"
                 FROM 
-                (SELECT "Title", "Rating", "mID" AS "ID", 1 AS "CHOICE" FROM MOVIE
-                UNION
-                SELECT "Title", "Rating", "sID" AS "ID", 0 AS "CHOICE" FROM SHOW)
-                ORDER BY "Rating" DESC """                              ### SUB-QUERY, UNION
+                (SELECT "Title", "Rating", "Photo", "mID" AS "ID", 1 AS "CHOICE" FROM MOVIE
+                UNION ALL
+                SELECT "Title", "Rating", "Photo", "sID" AS "ID", 0 AS "CHOICE" FROM SHOW)
+                ORDER BY "Rating" DESC """                                                          ### SUB-QUERY, UNION
 
     c.execute(query)
 
-    movie_list = c.fetchall()
+    movies = c.fetchall()
+
+    for movie in movies:
+        # movies.append(movie[0])
+        title = movie[0]
+        rating = movie[1]
+        photo = movie[2].read()
+        id = movie[3]
+        choice = movie[4]
+
+        encoded = base64.b64encode(photo)
+        encoded = encoded.decode('utf-8')
+
+        movie_list.append([title, rating, encoded, id, choice])
 
     dict = {'movie_list': movie_list}
 
